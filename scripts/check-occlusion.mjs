@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {blocksView} from '../src/occlusion-math.ts';
+const min={x:-2,y:0,z:-1},max={x:2,y:3.6,z:-.85},forward={x:0,y:.3,z:-1};
+assert(blocksView({x:0,y:1,z:1},forward,min,max),'wall in front must hide');
+assert(!blocksView({x:0,y:1,z:-2},forward,min,max),'wall behind must return');
+assert(!blocksView({x:3,y:1,z:1},forward,min,max),'clear side must not hide');
+assert(!blocksView({x:0,y:4,z:1},forward,min,max),'ray above wall must stay clear');
+assert(blocksView({x:0,y:1,z:-2},{x:0,y:0,z:1},min,max),'both wall sides must work');
+assert(!blocksView({x:0,y:1,z:1},forward,min,max,.5),'distant wall outside ray must stay visible');
+console.log('Wall occlusion: front, back, sides, height and range passed');

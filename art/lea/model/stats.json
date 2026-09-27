@@ -1,0 +1,13 @@
+{
+  "triangles": 32134,
+  "vertices": 16998,
+  "materials": 15,
+  "bones": 17,
+  "animations": [
+    "Idle",
+    "Walk",
+    "Interact",
+    "Celebrate"
+  ],
+  "glb_bytes": 6441392
+}
