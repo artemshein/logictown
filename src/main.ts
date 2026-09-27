@@ -1,3 +1,5 @@
+import {createMemoryQuest} from './memory';
+import {installMemoryObjects} from './memory-world';
 import {createWallOcclusion} from './wall-occlusion';
 import {layout,houseBlocked,roomAt,navigation} from './layout';
 import {buildHouseRoom,type HouseRoom} from './house';
@@ -8,6 +10,8 @@ import './style.css';
 import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, HemisphericLight, DirectionalLight, ShadowGenerator, ArcRotateCamera, TransformNode, Mesh, Matrix, DynamicTexture } from '@babylonjs/core';
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
+const memoryCheck=import.meta.env.DEV&&location.pathname==='/checks/house.html';
+const roomStorageKey=memoryCheck?'logictown-memory-check-room':'logictown-room';
 let saved:{clue?:boolean;solved?:boolean}={};
 try{saved=JSON.parse(localStorage.getItem('logictown-v1')||'{}')}catch{}
 let clue=!!saved.clue, solved=!!saved.solved;
@@ -130,7 +134,6 @@ for(const [lo,hi] of [[-4,.5],[2.5,4]])box('bedroom open passage',(lo+hi)/2,.325
 const houseRooms=new Map<RoomId,HouseRoom>([['bedroom',{root:bedroomRoot,floor,hotspots:[]}]]);
 let currentRoom:RoomId='bedroom';
 for(const id of Object.keys(layout) as RoomId[]){if(id!=='bedroom')houseRooms.set(id,buildHouseRoom(scene,shadow,id));const r=houseRooms.get(id)!;r.root.position.set(layout[id][0],0,layout[id][1]);}
-const updateWallOcclusion=createWallOcclusion(houseRooms);
 const floors=new Set(Array.from(houseRooms.values()).map(r=>r.floor));
 
 let leaAsset:Awaited<ReturnType<typeof loadLea>>|undefined;
@@ -147,9 +150,10 @@ const {step,originX,originZ,nx,nz}=navigation;
 const walkable=Array.from({length:nx*nz},(_,i)=>!blocked(originX+i%nx*step,originZ+Math.floor(i/nx)*step));
 const point=(i:number)=>new Vector3(originX+(i%nx)*step,.11,originZ+Math.floor(i/nx)*step);
 function nearest(p:Vector3){let best=-1,dist=Infinity;for(let i=0;i<nx*nz;i++){const q=point(i);if(!walkable[i])continue;const d=Vector3.DistanceSquared(p,q);if(d<dist){dist=d;best=i}}return best;}
+let leavingHouse=false;
 let route:Vector3[]=[],arrival:(()=>void)|null=null;
 function walkTo(p:Vector3,action?:()=>void){if(!$('.overlay').hidden)return;const start=nearest(girl.position),end=nearest(p);const queue=[start],prev=new Map<number,number>();prev.set(start,-1);for(let k=0;k<queue.length&&!prev.has(end);k++){const cur=queue[k];for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){const x=cur%nx+dx,z=Math.floor(cur/nx)+dz,id=z*nx+x;if(x<0||x>=nx||z<0||z>=nz||prev.has(id))continue;const q=point(id);if(!walkable[id])continue;prev.set(id,cur);queue.push(id)}}if(!prev.has(end)){toast('Сюда пока не пройти. Попробуй другую точку.');return}const ids=[];for(let i=end;i!==start;i=prev.get(i)!)ids.push(i);route=ids.reverse().map(point);arrival=action||null;marker.position.copyFrom(point(end));marker.position.y=.105;marker.isVisible=true;if(!route.length){arrival?.();arrival=null;marker.isVisible=false;}}
-canvas.addEventListener('pointerup',e=>{if(!$('.overlay').hidden)return;const rect=canvas.getBoundingClientRect();const pick=scene.pick(e.clientX-rect.left,e.clientY-rect.top,m=>floors.has(m as Mesh));if(pick?.hit&&pick.pickedPoint)walkTo(pick.pickedPoint)});
+canvas.addEventListener('pointerup',e=>{if(!$('.overlay').hidden)return;const rect=canvas.getBoundingClientRect();if(leavingHouse||girl.position.x>20)return;const pick=scene.pick(e.clientX-rect.left,e.clientY-rect.top,m=>floors.has(m as Mesh));if(pick?.hit&&pick.pickedPoint)walkTo(pick.pickedPoint)});
 
 let toastTimer=0;function toast(text:string){$('.toast').textContent=text;$('.toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=window.setTimeout(()=>$('.toast').classList.remove('visible'),4200)}
 let lastFocus:HTMLElement|null=null;
@@ -168,6 +172,17 @@ $('#help').onclick=()=>{modal(`<div class="eyebrow">Добро пожалова�
 let audio:AudioContext|undefined,sound=false;
 function tone(notes:number[]){if(!sound)return;audio??=new AudioContext();void audio.resume();notes.forEach((n,i)=>{const osc=audio!.createOscillator(),gain=audio!.createGain(),t=audio!.currentTime+i*.16;osc.type='sine';osc.frequency.value=n;gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.075,t+.01);gain.gain.exponentialRampToValueAtTime(.001,t+.65);osc.connect(gain);gain.connect(audio!.destination);osc.start(t);osc.stop(t+.7)})}
 $('#sound').onclick=()=>{sound=!sound;$('#sound').textContent=sound?'♫':'♪';$('#sound').setAttribute('aria-label',sound?'Выключить звук':'Включить звук');tone([523,659,784]);toast(sound?'Звуки шкатулки включены':'Звуки выключены')};
+let memoryObjects:ReturnType<typeof installMemoryObjects>|undefined;
+const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAction('Celebrate'),changed:()=>memoryObjects?.sync(),exit:()=>{
+ leavingHouse=true;marker.isVisible=false;route=[new Vector3(22,.11,-5.1)];memoryObjects?.sync();
+ arrival=()=>{leavingHouse=false;modal(`<div class="memory"><h2 id="modal-title">За порогом</h2><p>Дверь открыта. Лея вышла из дома — впереди Тихий город.</p><blockquote>«Теперь у тебя есть своя история».</blockquote><button class="primary" id="return-home">Вернуться в дом</button></div>`);$('#return-home').onclick=returnHome};
+
+}},memoryCheck?'logictown-memory-check-v1':'logictown-memory-v1');
+memoryObjects=installMemoryObjects(scene,shadow,houseRooms,memory);memoryObjects.sync();
+const updateWallOcclusion=createWallOcclusion(houseRooms);
+function returnHome(){closeModal();leavingHouse=true;route=[new Vector3(18.8,.11,-5.1)];arrival=()=>{leavingHouse=false;switchRoom('hall')}}
+const returnPin=document.createElement('button');returnPin.className='pin';returnPin.textContent='⌂';returnPin.setAttribute('aria-label','Вернуться в дом');returnPin.hidden=true;returnPin.onclick=returnHome;$('#app').append(returnPin);
+
 const anchors=[{id:'#pin-note',p:new Vector3(-.05,1.9,2.05)},{id:'#pin-box',p:new Vector3(2.73,2.08,2.54)},{id:'#pin-plant',p:new Vector3(3.26,2.08,.69)}];
 // The room graph is shared by door navigation, room selection and collision checks.
 $('#app').insertAdjacentHTML('beforeend',`<nav class="house-nav" aria-label="План дома">${Object.entries(roomNames).map(([id,name])=>`<button data-room="${id}" aria-pressed="${id==='bedroom'}">${name}</button>`).join('')}</nav><aside class="room-story quest" hidden><div class="quest-head">Наш дом <span>⌂</span></div><h2></h2><p></p><span class="room-count"></span></aside><div id="house-pins"></div>`);
@@ -178,18 +193,20 @@ function switchRoom(id:RoomId){
  document.querySelectorAll<HTMLButtonElement>('[data-room]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.room===id)));
  document.querySelector<HTMLElement>('aside.quest:not(.room-story)')!.hidden=id!=='bedroom';
  $('.room-story').hidden=id==='bedroom';$('.room-story h2').textContent=roomNames[id];$('.room-story p').textContent=cfg.story;$('.room-count').textContent='Единый дом · Без загрузок';
- for(const a of anchors)$(a.id).hidden=id!=='bedroom';
+ for(const a of anchors)$(a.id).hidden=true;
  const pins=$('#house-pins');pins.replaceChildren();roomAnchors=[];
  const room=houseRooms.get(id)!,offset=new Vector3(layout[id][0],0,layout[id][1]);
- for(const spot of room.hotspots){const b=document.createElement('button');b.className='pin';b.textContent=spot.icon;b.title=spot.label;b.setAttribute('aria-label',spot.label);b.onclick=()=>walkTo(spot.approach.add(offset),()=>{characterAction('Interact');spot.activate?.();toast(spot.message)});pins.append(b);roomAnchors.push({el:b,p:spot.position.add(offset)})}
- try{localStorage.setItem('logictown-room',id)}catch{}
+ for(const spot of room.hotspots){const b=document.createElement('button');b.className='pin';b.textContent=spot.icon;b.title=spot.label;b.setAttribute('aria-label',spot.label);b.onclick=()=>walkTo(spot.approach.add(offset),()=>{characterAction('Interact');spot.activate?.();if(spot.message)toast(spot.message)});pins.append(b);roomAnchors.push({el:b,p:spot.position.add(offset)})}
+ try{localStorage.setItem(roomStorageKey,id)}catch{}
 }
 for(const b of Array.from(document.querySelectorAll<HTMLButtonElement>('[data-room]')))b.onclick=()=>{const id=b.dataset.room as RoomId,cfg=roomInfo[id];walkTo(new Vector3(layout[id][0]+cfg.spawn[0],.11,layout[id][1]+cfg.spawn[1]));};
-let initialRoom:RoomId='bedroom';try{const stored=localStorage.getItem('logictown-room');if(stored&&stored in roomInfo)initialRoom=stored as RoomId}catch{}
+let initialRoom:RoomId='bedroom';try{const stored=localStorage.getItem(roomStorageKey);if(stored&&stored in roomInfo)initialRoom=stored as RoomId}catch{}
+if(memoryCheck)initialRoom='hall';
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
+if(memoryCheck)girl.position.set(18.8,.11,-5.1);
 camera.target.set(girl.position.x,.8,girl.position.z);switchRoom(initialRoom);
 let time=0;
-engine.runRenderLoop(()=>{const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const moving=route.length>0&&$('.overlay').hidden;if(moving){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*1.85){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*1.85/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);camera.target.x+=(girl.position.x-camera.target.x)*Math.min(1,dt*4);camera.target.z+=(girl.position.z-camera.target.z)*Math.min(1,dt*4);sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();updateWallOcclusion(camera,girl,time);scene.render();for(const a of [...(currentRoom==='bedroom'?anchors.map(a=>({el:$(a.id),p:a.p})):[]),...roomAnchors]){const p=Vector3.Project(a.p,Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));const el=a.el;el.style.left=`${p.x/engine.getRenderWidth()*canvas.clientWidth}px`;el.style.top=`${p.y/engine.getRenderHeight()*canvas.clientHeight}px`;}});
+engine.runRenderLoop(()=>{const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const moving=route.length>0&&$('.overlay').hidden;if(moving){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*1.85){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*1.85/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);camera.target.x+=(girl.position.x-camera.target.x)*Math.min(1,dt*4);camera.target.z+=(girl.position.z-camera.target.z)*Math.min(1,dt*4);sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();updateWallOcclusion(camera,girl,time);scene.render();returnPin.hidden=girl.position.x<=20;for(const a of [{el:returnPin,p:new Vector3(21.3,1.2,-5.1)},...(currentRoom==='bedroom'?anchors.map(a=>({el:$(a.id),p:a.p})):[]),...roomAnchors]){const p=Vector3.Project(a.p,Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));const el=a.el;el.style.left=`${p.x/engine.getRenderWidth()*canvas.clientWidth}px`;el.style.top=`${p.y/engine.getRenderHeight()*canvas.clientHeight}px`;}});
 window.addEventListener('resize',resize);resize();updateUI();
 scene.onAfterRenderObservable.addOnce(()=>{$('.loading').hidden=true});
 
