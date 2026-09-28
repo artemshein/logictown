@@ -1,3 +1,4 @@
+import {applyWallFinishes} from './wall-finishes';
 import {createMemoryQuest} from './memory';
 import {installMemoryObjects} from './memory-world';
 import {createWallOcclusion} from './wall-occlusion';
@@ -179,6 +180,7 @@ const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAc
 
 }},memoryCheck?'logictown-memory-check-v1':'logictown-memory-v1');
 memoryObjects=installMemoryObjects(scene,shadow,houseRooms,memory);memoryObjects.sync();
+applyWallFinishes(scene,houseRooms);
 const updateWallOcclusion=createWallOcclusion(houseRooms);
 function returnHome(){closeModal();leavingHouse=true;route=[new Vector3(18.8,.11,-5.1)];arrival=()=>{leavingHouse=false;switchRoom('hall')}}
 const returnPin=document.createElement('button');returnPin.className='pin';returnPin.textContent='⌂';returnPin.setAttribute('aria-label','Вернуться в дом');returnPin.hidden=true;returnPin.onclick=returnHome;$('#app').append(returnPin);
