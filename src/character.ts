@@ -1,3 +1,4 @@
+import {createViewportSync} from './viewport';
 import {ArcRotateCamera, Color3, Color4, DirectionalLight, Engine, HemisphericLight, MeshBuilder, Scene, ShadowGenerator, StandardMaterial, TransformNode, Vector3} from '@babylonjs/core';
 import {loadLea,LeaClip} from './lea';
 import './character.css';
@@ -13,4 +14,4 @@ const ground=MeshBuilder.CreateGround('studio floor',{width:200,height:200},scen
 const root=new TransformNode('Lea',scene);root.rotation.y=Math.PI;
 let close=false;document.querySelector<HTMLButtonElement>('#face')!.onclick=()=>{close=!close;camera.target.set(0,close?1.43:.91,0);camera.radius=close?.92:2.9;document.querySelector('#face')!.textContent=close?'Во весь рост':'Лицо крупно'};
 async function start(){try{const lea=await loadLea(scene,root,shadow);document.querySelector('#status')!.textContent='';document.querySelectorAll<HTMLButtonElement>('[data-clip]').forEach(b=>{b.disabled=false;b.onclick=()=>{lea.play(b.dataset.clip as LeaClip);document.querySelectorAll('[data-clip]').forEach(el=>el.classList.toggle('active',el===b))}})}catch(e){document.querySelector('#status')!.textContent='Не удалось загрузить модель. Обновите страницу.';console.error(e)}}
-document.querySelectorAll<HTMLButtonElement>('[data-clip]').forEach(b=>b.disabled=true);void start();engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
+document.querySelectorAll<HTMLButtonElement>('[data-clip]').forEach(b=>b.disabled=true);void start();const viewport=createViewportSync(canvas,engine);engine.runRenderLoop(()=>{viewport.update();scene.render()});import.meta.hot?.dispose(()=>viewport.dispose());
