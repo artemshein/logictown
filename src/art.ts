@@ -1,3 +1,4 @@
+import {quiltPoint} from './quilt';
 import { Scene, StandardMaterial, DynamicTexture, Texture, Color3, Color4, Mesh, MeshBuilder, VertexData, Vector3, TransformNode, ArcRotateCamera, DefaultRenderingPipeline, SSAO2RenderingPipeline, HemisphericLight, DirectionalLight, ShadowGenerator } from '@babylonjs/core';
 
 // Deterministic, locally generated art: no network or placeholder asset dependency.
@@ -33,7 +34,7 @@ export function upgradeArt(scene:Scene,camera:ArcRotateCamera,shadow:ShadowGener
  // Actual draped fabric surface, with embroidered flowers and scalloped edges.
  scene.meshes.filter(m=>m.name==='duvet'||m.name==='quilt stitching').forEach(m=>m.dispose());
  const blanketMat=material(scene,'embroidered duvet','#ffffff');blanketMat.diffuseTexture=texture(scene,'duvet embroidery',1024,(c,n)=>{c.fillStyle='#c29584';c.fillRect(0,0,n,n);for(let y=0;y<n;y+=3){c.fillStyle='#fff5df16';c.fillRect(0,y,n,1)}for(let y=80;y<n;y+=145)for(let x=75;x<n;x+=145){c.strokeStyle='#647d6966';c.lineWidth=3;c.beginPath();c.moveTo(x,y+25);c.quadraticCurveTo(x+10,y,x,y-18);c.stroke();c.fillStyle='#e8d9b6';for(let k=0;k<6;k++){c.beginPath();c.ellipse(x+Math.cos(k)*9,y-18+Math.sin(k)*9,7,4,k,0,7);c.fill()}c.fillStyle='#ab755d';c.beginPath();c.arc(x,y-18,4,0,7);c.fill();}c.strokeStyle='#efd9b7';c.lineWidth=12;c.strokeRect(25,25,n-50,n-50);});
- const paths:Vector3[][]=[];for(let j=0;j<=32;j++){const row:Vector3[]=[];for(let i=0;i<=32;i++){const u=i/32,v=j/32,x=(u-.5)*1.94,drop=Math.max(0,Math.abs(x)-.72);row.push(new Vector3(-2.72+x,.94-drop*2.6+Math.sin(u*38+v*3)*(.007+drop*.12)+Math.sin(v*23)*.012,.04+v*1.92))}paths.push(row)}
+ const paths:Vector3[][]=[];for(let j=0;j<=32;j++){const row:Vector3[]=[];for(let i=0;i<=64;i++){const p=quiltPoint(i/64,j/32);row.push(new Vector3(p.x,p.y,p.z))}paths.push(row)}
  const blanket=MeshBuilder.CreateRibbon('soft draped quilt',{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);blanket.material=blanketMat;blanket.receiveShadows=true;shadow.addShadowCaster(blanket);
  // Soft cushions with piping.
  const pillow=scene.getMeshByName('pillow');if(pillow){pillow.scaling.set(1.3,.24,.64);pillow.rotation.y=.06;}
