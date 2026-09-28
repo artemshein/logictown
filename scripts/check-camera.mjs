@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {cameraDistance} from '../src/camera-collision.ts';
+const wall={min:{x:-3,y:0,z:-2.1},max:{x:3,y:4,z:-2}};
+const origin={x:0,y:1.45,z:0},back={x:0,y:0,z:-1};
+assert.equal(cameraDistance(origin,back,3,[]),3);
+assert(Math.abs(cameraDistance(origin,back,3,[wall])-1.8)<1e-8);
+assert.equal(cameraDistance(origin,{x:0,y:0,z:1},3,[wall]),3,'wall behind the boom does not pull camera');
+assert.equal(cameraDistance({x:4,y:1,z:0},back,3,[wall]),3,'parallel ray outside wall');
+assert(cameraDistance({x:0,y:1,z:-1.7},back,3,[wall])<.15,'camera stays inside room near wall');
+const nearWall={min:{x:-3,y:0,z:-1.1},max:{x:3,y:4,z:-1}};
+assert(cameraDistance(origin,back,3,[wall,nearWall])<1,'nearest wall wins');
+const doorway=[{min:{x:-3,y:0,z:-2.1},max:{x:-1,y:4,z:-2}},{min:{x:1,y:0,z:-2.1},max:{x:3,y:4,z:-2}}];
+assert.equal(cameraDistance(origin,back,3,doorway),3,'open passage stays clear');
+console.log('Camera: room boundaries, clearance, nearest wall and open passages passed');

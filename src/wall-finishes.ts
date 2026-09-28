@@ -42,7 +42,7 @@ export function applyWallFinishes(scene:Scene,rooms:Map<RoomId,HouseRoom>){
  for(const [id,room] of rooms){let tileIndex=0;for(const abstract of room.root.getChildMeshes()){
    const mesh=abstract as Mesh,name=mesh.name;
    if(name.includes('glazed wall tile')){mesh.material=tiles.get(id)![tileIndex++%4];continue}
-   if(name==='back wall'||name==='left wall'||name==='bedroom open passage'||name===id+' back wall'||name===id+' left wall'||name===id+' open passage wall'||name===id+' cutaway right wall'){
+   if(name.includes('solid wall')||name==='back wall'||name==='left wall'||name==='bedroom open passage'||name===id+' back wall'||name===id+' left wall'||name===id+' open passage wall'||name===id+' cutaway right wall'){
     mesh.material=plaster[id];worldUV(mesh);
    }
   }

@@ -29,7 +29,7 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
  const floor=box('walkable floor',0,0,0,w,.08,d,oak);
  const wallMat=mat('plaster',id==='living'?'#c5bba6':id==='kitchen'?'#ded6b6':id==='bathroom'?'#becfd0':id==='toilet'?'#b7c4ae':'#d4c7b0');
  if(id!=='bedroom'){
- if(id!=='bathroom'&&id!=='toilet'&&id!=='hall')box('back wall',0,1.8,d/2,w+.1,3.6,.12,wallMat);box('left wall',-w/2,1.8,0,.12,3.6,d,wallMat);
+ if(id!=='bathroom'&&id!=='toilet'&&id!=='hall')box('back wall',0,1.8,d/2,w+.1,3.6,.12,wallMat);box('left wall',-w/2+.06,1.8,0,.12,3.6,d,wallMat);
  if(id!=='bathroom'&&id!=='toilet'&&id!=='hall')box('back wall cap',0,3.64,d/2,w+.22,.09,.23,cream);box('side wall cap',-w/2,3.64,0,.22,.09,d,cream);
  if(id!=='bathroom'&&id!=='toilet'&&id!=='hall')box('back skirting',0,.15,d/2-.1,w,.22,.1,cream);box('side skirting',-w/2+.1,.15,0,.1,.22,d,cream);
  if(id==='bathroom'||id==='toilet'||id==='kitchen'){
@@ -40,9 +40,11 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
  }else for(let z=-d/2+.2;z<d/2;z+=.4)box('floor board seam',0,.045,z,w,.005,.008,wood);
  }
  if(id!=='hall'&&id!=='bedroom'){
- const south=id==='bathroom'||id==='toilet',gap=entries[id]!,edge=south?d/2:-d/2,h=south?3.6:.65;
+ const south=id==='bathroom'||id==='toilet',gap=entries[id]!,edge=south?d/2:-d/2,h=3.6;
  for(const [lo,hi] of [[-w/2,gap-1],[gap+1,w/2]])if(hi>lo){box('open passage wall',(lo+hi)/2,h/2,edge,hi-lo,h,.12,wallMat);box('passage cap',(lo+hi)/2,h+.04,edge,hi-lo,.08,.2,cream)}
- box('cutaway right wall',w/2,.325,0,.12,.65,d,wallMat);
+ box('cutaway right wall',w/2-.06,1.8,0,.12,3.6,d,wallMat);
+ if(south)box('solid wall south',0,1.8,-d/2,w,3.6,.12,wallMat);
+ box('solid wall lintel',gap,3.2,edge,2,.8,.12,wallMat);
  }
  if(id==='living'){
   rug(-.8,-.1,4.2,3.2);box('sofa base',-1.25,.43,2.15,3.65,.55,1.35,rose);box('sofa back',-1.25,1.1,2.66,3.65,1.05,.3,rose);
@@ -94,7 +96,13 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
   mirror(1.3,2.3,3.28,.55,.7);plant(3.2,.08,1.45,1);
   hotspot('Скамейка в прихожей','⌂',[3,1.18,-.5],[1.8,-.6],'Тут удобно переобуваться. Все комнаты дома уже открыты для исследования.');
  }
- if(id==='hall'){for(const o of root.getChildMeshes())if(/wall|skirting|mirror/.test(o.name))o.setEnabled(false)}
+ if(id==='hall'){
+  for(const o of root.getChildMeshes())if(/mirror/.test(o.name))o.setEnabled(false);
+  // Fill the outside boundary between the two southern rooms and at the entrance.
+  for(const [lo,hi] of [[-12,-11.3],[-4.7,-4.4],[.4,12]])box('solid wall south',(lo+hi)/2,1.8,-d/2,hi-lo,3.6,.12,wallMat);
+  for(const [lo,hi] of [[-d/2,-.88],[.88,d/2]])box('solid wall entrance',w/2,1.8,(lo+hi)/2,.12,3.6,hi-lo,wallMat);
+  box('solid wall entrance lintel',w/2,3.2,0,.12,.8,1.76,wallMat);
+ }
  // Bedroom already has its own shell. Only its new door belongs to this root.
  if(id==='bedroom'){for(const o of root.getChildMeshes())if(o.name.includes('foundation')||o.name.includes('walkable floor'))o.setEnabled(false)}
  return {root,floor,hotspots};

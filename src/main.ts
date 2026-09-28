@@ -4,14 +4,15 @@ import {createViewportSync} from './viewport';
 import {applyWallFinishes} from './wall-finishes';
 import {createMemoryQuest} from './memory';
 import {installMemoryObjects} from './memory-world';
-import {createWallOcclusion} from './wall-occlusion';
+import {createInteractionMarker} from './interaction-marker';
+import {cameraDistance} from './camera-collision';
 import {layout,houseBlocked,roomAt,navigation} from './layout';
 import {buildHouseRoom,type HouseRoom} from './house';
 import {roomInfo,roomNames,isBlocked,type RoomId} from './house-data';
 import { loadLea } from './lea';
 import { roundedBox, upgradeArt } from './art';
 import './style.css';
-import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, HemisphericLight, DirectionalLight, ShadowGenerator, ArcRotateCamera, TransformNode, Mesh, Matrix, DynamicTexture } from '@babylonjs/core';
+import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, HemisphericLight, DirectionalLight, ShadowGenerator, ArcRotateCamera, TransformNode, Mesh, PointerEventTypes, Ray, DynamicTexture } from '@babylonjs/core';
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
 const memoryCheck=import.meta.env.DEV&&location.pathname==='/checks/house.html';
@@ -24,7 +25,6 @@ $('#app').innerHTML=`<canvas id="world" aria-label="Трёхмерная ком�
 <header class="topbar"><div class="brand"><div class="brand-mark">⌂</div><div><strong>Тихий город</strong><small>МАЛЕНЬКИЕ ШАГИ · БОЛЬШИЕ ОТКРЫТИЯ</small></div></div><div class="top-actions"><button class="round" id="character-preview" aria-label="Посмотреть Лею крупно" title="Посмотреть Лею крупно">♙</button><button class="round" id="sound" aria-label="Включить звук" title="Звук">♪</button><button class="round" id="help" aria-label="Как играть" title="Как играть">?</button></div></header>
 <section class="location"><div class="eyebrow">Глава 01 / Дом</div><h1>Комната Леи</h1><p>У каждого открытия<br>есть маленькое начало.</p><div class="chapter"><span></span><i></i><i></i><i></i><i></i> ПЕРВАЯ ИСТОРИЯ</div></section>
 <aside class="quest"><div class="quest-head"><span>Маленькая загадка</span><span>✧</span></div><h2 id="quest-title">Мелодия утра</h2><p>Бабушка оставила сюрприз.<br>Интересно, как открыть<br>музыкальную шкатулку?</p><div class="quest-line" id="clue-step"><span class="check"></span>Найди бабушкину записку</div><div class="quest-line" id="box-step"><span class="check"></span>Открой шкатулку</div><button class="hint" id="hint">Нужна маленькая подсказка?</button></aside>
-<button class="pin" id="pin-note" aria-label="Подойти к записке" title="Бабушкина записка">✎</button><button class="pin" id="pin-box" aria-label="Подойти к музыкальной шкатулке" title="Музыкальная шкатулка">✧</button><button class="pin" id="pin-plant" aria-label="Посмотреть растение" title="Растение">❀</button>
 <footer class="bottom"><div class="player"><div class="portrait">👧🏻</div><div><strong>Лея</strong><small>Исследовательница</small></div></div><div class="instructions">Нажми на пол, чтобы идти · На значок, чтобы исследовать</div><div class="inventory"><button class="slot" id="bag-note" aria-label="Записка в рюкзаке" title="Записка">·</button><button class="slot" id="bag-star" aria-label="Звёздочка в рюкзаке" title="Звёздочка">·</button><div class="slot" title="Рюкзак">♧</div></div></footer>
 <div class="toast" role="status"></div><div class="overlay" hidden><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section></div><div class="loading"><span>Загрузка…</span></div>`;
 
@@ -33,9 +33,10 @@ const canvas=$<HTMLCanvasElement>('#world');
 const engine=new Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,adaptToDeviceRatio:false});
 engine.setHardwareScalingLevel(1/Math.min(window.devicePixelRatio,1.5));
 const scene=new Scene(engine);scene.clearColor=new Color4(.914,.914,.868,1);
-const camera=new ArcRotateCamera('camera',-Math.PI/2,1.12,4.3,new Vector3(0,1,0),scene);
+let cameraBoom=3.2;
+const camera=new ArcRotateCamera('camera',-Math.PI/2,1.4,3.2,new Vector3(0,1,0),scene);
 camera.mode=0;camera.minZ=.05;camera.maxZ=100;camera.fov=.9;
-const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;camera.radius=aspect<.8?4.6:4.3;camera.getProjectionMatrix(true)});
+const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;cameraBoom=aspect<.8?3.5:3.2;camera.getProjectionMatrix(true)});
 import.meta.hot?.dispose(()=>viewport.dispose());
 const hemi=new HemisphericLight('sky',new Vector3(0,1,0),scene);hemi.intensity=.85;hemi.diffuse=Color3.FromHexString('#fff1d8');hemi.groundColor=Color3.FromHexString('#85968e');
 const sun=new DirectionalLight('sun',new Vector3(-.7,-1,-.5),scene);sun.position=new Vector3(6,10,6);sun.intensity=2;sun.diffuse=Color3.FromHexString('#ffe2b1');
@@ -49,7 +50,7 @@ function sphere(name:string,x:number,y:number,z:number,sx:number,sy:number,sz:nu
 function cyl(name:string,x:number,y:number,z:number,diam:number,height:number,m:StandardMaterial,top=diam,parent?:TransformNode){const o=MeshBuilder.CreateCylinder(name,{diameterBottom:diam,diameterTop:top,height,tessellation:32},scene);o.position.set(x,y,z);o.material=m;o.receiveShadows=true;if(parent)o.parent=parent;shadow.addShadowCaster(o);return o;}
 function rod(name:string,a:Vector3,b:Vector3,r:number,m:StandardMaterial){const o=MeshBuilder.CreateTube(name,{path:[a,b],radius:r,tessellation:8},scene);o.material=m;shadow.addShadowCaster(o);return o;}
 
-// A hand-built dollhouse: front and right walls are open to the player.
+// Full room walls with open internal passages.
 box('floating foundation',0,-.25,0,8.35,.46,7.15,cream);
 const floor=box('walkable floor',0,0,0,8,.08,6.8,lightwood);
 const grain=mat('floor seams','#ae875f');
@@ -135,7 +136,9 @@ upgradeArt(scene,camera,shadow,girl);
 const bedroomRoot=new TransformNode('room-bedroom-original',scene);
 scene.meshes.filter(m=>!m.isDescendantOf(girl)).forEach(m=>{if(!m.parent)m.parent=bedroomRoot});
 scene.transformNodes.filter(n=>n!==girl&&n!==bedroomRoot&&!n.parent).forEach(n=>n.parent=bedroomRoot);
-for(const [lo,hi] of [[-4,.5],[2.5,4]])box('bedroom open passage',(lo+hi)/2,.325,-3.4,hi-lo,.65,.12,wall,bedroomRoot);
+for(const [lo,hi] of [[-4,.5],[2.5,4]])box('bedroom open passage',(lo+hi)/2,1.95,-3.4,hi-lo,3.9,.12,wall,bedroomRoot);
+box('solid wall bedroom right',3.94,1.95,0,.12,3.9,6.8,wall,bedroomRoot);
+box('solid wall bedroom lintel',1.5,3.35,-3.4,2,1.1,.12,wall,bedroomRoot);
 const houseRooms=new Map<RoomId,HouseRoom>([['bedroom',{root:bedroomRoot,floor,hotspots:[]}]]);
 let currentRoom:RoomId='bedroom';
 for(const id of Object.keys(layout) as RoomId[]){if(id!=='bedroom')houseRooms.set(id,buildHouseRoom(scene,shadow,id));const r=houseRooms.get(id)!;r.root.position.set(layout[id][0],0,layout[id][1]);}
@@ -166,12 +169,11 @@ function modal(html:string){controls.clear();lastFocus=document.activeElement as
 function closeModal(){$('.overlay').hidden=true;lastFocus?.focus();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Tab'&&!$('.overlay').hidden){const items=Array.from(document.querySelectorAll<HTMLElement>('.modal button'));const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
 $('.overlay').addEventListener('click',e=>{if(e.target===$('.overlay'))closeModal()});
-function updateUI(){$('#clue-step').classList.toggle('done',clue);$('#box-step').classList.toggle('done',solved);$('#clue-step .check').textContent=clue?'✓':'';$('#box-step .check').textContent=solved?'✓':'';$('#bag-note').textContent=clue?'✎':'·';$('#bag-star').textContent=solved?'★':'·';$('.quest').classList.toggle('solved',solved);$('#quest-title').textContent=solved?'Первое открытие!':'Мелодия утра';$('#pin-note').textContent=clue?'✓':'✎';$('#pin-box').textContent=solved?'★':'✧';}
+function updateUI(){$('#clue-step').classList.toggle('done',clue);$('#box-step').classList.toggle('done',solved);$('#clue-step .check').textContent=clue?'✓':'';$('#box-step .check').textContent=solved?'✓':'';$('#bag-note').textContent=clue?'✎':'·';$('#bag-star').textContent=solved?'★':'·';$('.quest').classList.toggle('solved',solved);$('#quest-title').textContent=solved?'Первое открытие!':'Мелодия утра';}
 function showNote(){characterAction('Interact');clue=true;save();updateUI();tone([523,659]);modal(`<div class="eyebrow">На столе · Бабушкина записка</div><div class="illustration">✉</div><h2 id="modal-title">Доброе утро, Лея!</h2><p>«В шкатулке тебя ждёт маленький подарок.<br>Поставь фигурки на свои места:</p><p><strong>Цветок — сразу справа от солнышка.<br>Солнышко — справа от луны.</strong></p><p>Пусть каждый день начинается с открытия.<br>Обнимаю, бабушка»</p><button class="primary" id="note-ok">Пойду к шкатулке</button>`);$('#note-ok').onclick=()=>{closeModal();walkTo(new Vector3(2.63,.11,1.56),showPuzzle)}}
 const symbols=['☀','☾','❀'],names=['Солнце','Луна','Цветок'];let selection=[0,0,0],attempts=0;
 function showPuzzle(){if(solved){showSuccess();return}modal(`<div class="eyebrow">Головоломка 01 / Порядок</div><h2 id="modal-title">Мелодия утра</h2><p>${clue?'Цветок — сразу справа от солнышка.<br>Солнышко — справа от луны.':'Три фигурки, три места. Где же подсказка?<br>Кажется, на столе лежит записка…'}</p><div class="puzzle-slots">${selection.map((v,i)=>`<button class="puzzle-slot" data-slot="${i}" aria-label="Место ${i+1}: ${names[v]}. Нажмите, чтобы сменить"><b>${symbols[v]}</b><small>${i+1} · ${names[v]}</small></button>`).join('')}</div><p>Нажимай на фигурки, чтобы менять их.</p><div class="feedback" role="status"></div><div class="modal-actions"><button class="secondary" id="puzzle-clue">${clue?'Записка':'Найти записку'}</button><button class="primary" id="check">Открыть шкатулку</button></div>`);document.querySelectorAll<HTMLButtonElement>('[data-slot]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.slot);selection[i]=(selection[i]+1)%3;b.innerHTML=`<b>${symbols[selection[i]]}</b><small>${i+1} · ${names[selection[i]]}</small>`;b.setAttribute('aria-label',`Место ${i+1}: ${names[selection[i]]}. Нажмите, чтобы сменить`);b.classList.add('selected');$('.feedback').textContent='';tone([330+selection[i]*110])});$('#puzzle-clue').onclick=()=>{closeModal();if(clue)showNote();else walkTo(new Vector3(-.6,.11,.92),showNote)};$('#check').onclick=()=>{if(selection.join() ==='1,0,2'){solved=true;save();updateUI();tone([523,659,784,1047]);showSuccess()}else{attempts++;$('.feedback').textContent=attempts>1?'Начни с луны: перед солнышком должно быть место.':'Пока не открывается. Проверь порядок слева направо.';tone([220,196]);}}}
 function showSuccess(){characterAction('Celebrate');modal(`<div class="eyebrow">Маленькая победа</div><div class="illustration" style="color:#d3a14b">✦</div><h2 id="modal-title">У тебя получилось!</h2><p>Шкатулка заиграла, а внутри оказалась<br><strong>золотая звёздочка — за любопытство.</strong></p><p>Это первое открытие Леи в Тихом городе.<br>Впереди ещё столько интересного!</p><button class="primary" id="success-ok">Продолжить исследовать</button>`);$('#success-ok').onclick=closeModal;}
-$('#pin-note').onclick=()=>walkTo(new Vector3(-.65,.11,.8),showNote);$('#pin-box').onclick=()=>walkTo(new Vector3(2.63,.11,1.56),showPuzzle);$('#pin-plant').onclick=()=>walkTo(new Vector3(2.4,.11,.3),()=>toast('Это фикус Федя. Лея поворачивает его к солнцу каждое утро. 🌿'));
 $('#bag-note').onclick=()=>clue?showNote():toast('Здесь будет храниться найденная записка.');$('#bag-star').onclick=()=>solved?showSuccess():toast('Здесь пока пусто. Что же спрятано в шкатулке?');$('#hint').onclick=()=>toast(clue?'Слева направо: луна, солнце, цветок. Нажми на значок над шкатулкой.':'Нажми на карандаш над письменным столом — Лея подойдёт к записке.');
 $('#help').onclick=()=>{modal(`<div class="eyebrow">Добро пожаловать домой</div><h2 id="modal-title">Маленькое приключение</h2><p>Нажми на свободное место на полу — Лея подойдёт туда, обходя мебель.</p><p>Открытые проходы соединяют весь дом. Нажми на название комнаты сверху — Лея сама дойдёт до неё. Камера плавно следует за Леей. Значки над предметами открывают маленькие истории. Найди бабушкину записку и открой музыкальную шкатулку.</p><p>Прогресс сохраняется в этом браузере.<br>Звук можно включить кнопкой ♪.</p><div class="modal-actions"><button class="secondary" id="reset">Начать заново</button><button class="primary" id="help-ok">Всё понятно</button></div>`);$('#help-ok').onclick=closeModal;$('#reset').onclick=()=>{clue=false;solved=false;selection=[0,0,0];attempts=0;route=[];arrival=null;marker.isVisible=false;switchRoom('bedroom');girl.position.set(.1,.11,-1.13);save();updateUI();closeModal();toast('Новое утро, новая история. Начнём с записки?')}};
 let audio:AudioContext|undefined,sound=false;
@@ -185,24 +187,36 @@ const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAc
 }},memoryCheck?'logictown-memory-check-v1':'logictown-memory-v1');
 memoryObjects=installMemoryObjects(scene,shadow,houseRooms,memory);memoryObjects.sync();
 applyWallFinishes(scene,houseRooms);
-const updateWallOcclusion=createWallOcclusion(houseRooms);
+const cameraWalls=Array.from(houseRooms.values()).flatMap(room=>room.root.getChildMeshes()).filter(m=>m.isEnabled()&&/wall|open passage/.test(m.name)&&!/tile|clock/.test(m.name)).map(mesh=>{
+ mesh.computeWorldMatrix(true);if(mesh.material){mesh.material.backFaceCulling=false;mesh.material.disableDepthWrite=false;mesh.material.forceDepthWrite=true}
+ const b=mesh.getBoundingInfo().boundingBox;return {min:b.minimumWorld.clone(),max:b.maximumWorld.clone()};
+});
+const exteriorDoor=scene.getMeshByName('front door');
+scene.onPointerObservable.add(info=>{
+ if(info.type!==PointerEventTypes.POINTERTAP||!$('.overlay').hidden)return;
+ const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);
+ hit?.pickedMesh?.metadata?.interaction?.();
+});
 function returnHome(){closeModal();leavingHouse=true;route=[new Vector3(18.8,.11,-5.1)];arrival=()=>{leavingHouse=false;switchRoom('hall')}}
-const returnPin=document.createElement('button');returnPin.className='pin';returnPin.textContent='⌂';returnPin.setAttribute('aria-label','Вернуться в дом');returnPin.hidden=true;returnPin.onclick=returnHome;$('#app').append(returnPin);
+const returnPin=createInteractionMarker(scene,'Вернуться в дом','⌂',new Vector3(21.3,1.2,-5.1),returnHome);
 
-const anchors=[{id:'#pin-note',p:new Vector3(-.05,1.9,2.05)},{id:'#pin-box',p:new Vector3(2.73,2.08,2.54)},{id:'#pin-plant',p:new Vector3(3.26,2.08,.69)}];
 // The room graph is shared by door navigation, room selection and collision checks.
-$('#app').insertAdjacentHTML('beforeend',`<nav class="house-nav" aria-label="План дома">${Object.entries(roomNames).map(([id,name])=>`<button data-room="${id}" aria-pressed="${id==='bedroom'}">${name}</button>`).join('')}</nav><aside class="room-story quest" hidden><div class="quest-head">Наш дом <span>⌂</span></div><h2></h2><p></p><span class="room-count"></span></aside><div id="house-pins"></div>`);
-let roomAnchors:{el:HTMLElement;p:Vector3;approach:Vector3}[]=[];
+$('#app').insertAdjacentHTML('beforeend',`<nav class="house-nav" aria-label="План дома">${Object.entries(roomNames).map(([id,name])=>`<button data-room="${id}" aria-pressed="${id==='bedroom'}">${name}</button>`).join('')}</nav><aside class="room-story quest" hidden><div class="quest-head">Наш дом <span>⌂</span></div><h2></h2><p></p><span class="room-count"></span></aside>`);
+let roomAnchors:{marker:ReturnType<typeof createInteractionMarker>;approach:Vector3}[]=[];
 function switchRoom(id:RoomId){
  currentRoom=id;const cfg=roomInfo[id];
  $('.location h1').textContent=roomNames[id];$('.location p').textContent=cfg.description;document.title=roomNames[id]+' — Тихий город';canvas.setAttribute('aria-label','Единый дом Леи. Сейчас: '+roomNames[id]+'. Управление: кнопки справа или WASD. Значки появляются рядом с предметами.');
  document.querySelectorAll<HTMLButtonElement>('[data-room]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.room===id)));
  document.querySelector<HTMLElement>('aside.quest:not(.room-story)')!.hidden=id!=='bedroom';
  $('.room-story').hidden=id==='bedroom';$('.room-story h2').textContent=roomNames[id];$('.room-story p').textContent=cfg.story;$('.room-count').textContent='Единый дом · Без загрузок';
- for(const a of anchors)$(a.id).hidden=true;
- const pins=$('#house-pins');pins.replaceChildren();roomAnchors=[];
+ roomAnchors.forEach(a=>a.marker.dispose());roomAnchors=[];
  const room=houseRooms.get(id)!,offset=new Vector3(layout[id][0],0,layout[id][1]);
- for(const spot of room.hotspots){const b=document.createElement('button');b.className='pin';b.textContent=spot.icon;b.title=spot.label;b.setAttribute('aria-label',spot.label);b.onclick=()=>{if(!nearInteraction(girl.position,spot.approach.add(offset)))return;walkTo(spot.approach.add(offset),()=>{characterAction('Interact');spot.activate?.();if(spot.message)toast(spot.message)});};b.hidden=true;pins.append(b);roomAnchors.push({el:b,p:spot.position.add(offset),approach:spot.approach.add(offset)})}
+ for(const spot of room.hotspots){
+ const approach=spot.approach.add(offset);
+ const pin=createInteractionMarker(scene,spot.label,spot.icon,spot.position.add(offset),()=>{if(!nearInteraction(girl.position,approach))return;walkTo(approach,()=>{characterAction('Interact');spot.activate?.();if(spot.message)toast(spot.message)})});
+ roomAnchors.push({marker:pin,approach});
+ }
+
  try{localStorage.setItem(roomStorageKey,id)}catch{}
 }
 for(const b of Array.from(document.querySelectorAll<HTMLButtonElement>('[data-room]')))b.onclick=()=>{const id=b.dataset.room as RoomId,cfg=roomInfo[id];walkTo(new Vector3(layout[id][0]+cfg.spawn[0],.11,layout[id][1]+cfg.spawn[1]));};
@@ -218,17 +232,28 @@ engine.runRenderLoop(()=>{viewport.update();const dt=Math.min(engine.getDeltaTim
  if(manual){route=[];arrival=null;marker.isVisible=false;characterActionUntil=0;girl.rotation.y+=input.turn*dt*2.2;
  const outside=girl.position.x>20;
  const collides=(x:number,z:number)=>outside?(x<20.1||x>26.7||z< -8.2||z> -2):blocked(x,z);
- const next=moveWithCollisions(girl.position,girl.rotation.y,input.forward*dt*1.85,collides);manualMoving=Math.hypot(next.x-girl.position.x,next.z-girl.position.z)>.0001;girl.position.x=next.x;girl.position.z=next.z;
+ const next=moveWithCollisions(girl.position,girl.rotation.y,input.forward*dt*2.9,collides);manualMoving=Math.hypot(next.x-girl.position.x,next.z-girl.position.z)>.0001;girl.position.x=next.x;girl.position.z=next.z;
  }
- const moving=manualMoving||route.length>0&&$('.overlay').hidden;if(route.length&&$('.overlay').hidden){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*1.85){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*1.85/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);const cameraAlpha=-Math.PI/2-girl.rotation.y;camera.alpha+=Math.atan2(Math.sin(cameraAlpha-camera.alpha),Math.cos(cameraAlpha-camera.alpha))*(1-Math.exp(-dt*7));
- camera.target.x+=(girl.position.x+Math.sin(girl.rotation.y)*.35-camera.target.x)*(1-Math.exp(-dt*10));camera.target.z+=(girl.position.z+Math.cos(girl.rotation.y)*.35-camera.target.z)*(1-Math.exp(-dt*10));camera.target.y=1;
- sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();updateWallOcclusion(camera,girl,time);scene.render();for(const a of [{el:returnPin,p:new Vector3(21.3,1.2,-5.1),approach:new Vector3(22,.11,-5.1)},...roomAnchors]){
- const near=nearInteraction(girl.position,a.approach)&&$('.overlay').hidden&&(a.el!==returnPin||girl.position.x>20);
- const p=Vector3.Project(a.p,Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));
- const onscreen=p.z>0&&p.z<1;
- a.el.hidden=!near||!onscreen;
- if(!a.el.hidden){a.el.style.left=`${Math.max(26,Math.min(canvas.clientWidth-26,p.x/engine.getRenderWidth()*canvas.clientWidth))}px`;a.el.style.top=`${Math.max(55,Math.min(canvas.clientHeight-155,p.y/engine.getRenderHeight()*canvas.clientHeight))}px`;}
- }});
+ const moving=manualMoving||route.length>0&&$('.overlay').hidden;if(route.length&&$('.overlay').hidden){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*2.9){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*2.9/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);const cameraAlpha=-Math.PI/2-girl.rotation.y;camera.alpha+=Math.atan2(Math.sin(cameraAlpha-camera.alpha),Math.cos(cameraAlpha-camera.alpha))*(1-Math.exp(-dt*7));
+ camera.target.set(girl.position.x,1.45,girl.position.z);
+ const direction=new Vector3(Math.cos(camera.alpha)*Math.sin(camera.beta),Math.cos(camera.beta),Math.sin(camera.alpha)*Math.sin(camera.beta));
+ const walls=[...cameraWalls];
+ if(exteriorDoor){exteriorDoor.computeWorldMatrix(true);const b=exteriorDoor.getBoundingInfo().boundingBox;walls.push({min:b.minimumWorld,max:b.maximumWorld})}
+ const allowed=cameraDistance(camera.target,direction,cameraBoom,walls);
+ camera.radius=allowed<camera.radius?allowed:Math.min(allowed,camera.radius+dt*3);
+ sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();
+ for(const a of [{marker:returnPin,approach:new Vector3(22,.11,-5.1)},...roomAnchors]){
+  const near=nearInteraction(girl.position,a.approach)&&$('.overlay').hidden&&(a.marker!==returnPin||girl.position.x>20);
+  a.marker.mesh.setEnabled(near);
+  if(near){
+   const delta=a.marker.mesh.position.subtract(camera.position),distance=delta.length();
+   const hit=scene.pickWithRay(new Ray(camera.position,delta.normalize(),distance),m=>m.isEnabled()&&m.isVisible&&m.isPickable&&!m.metadata?.interaction&&!m.isDescendantOf(girl));
+   a.marker.mesh.setEnabled(!hit?.hit||hit.distance>=distance-.12);
+  }
+ }
+ scene.render();
+});
+
 
 viewport.update();updateUI();
 scene.onAfterRenderObservable.addOnce(()=>{$('.loading').hidden=true});
