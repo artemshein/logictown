@@ -1,7 +1,7 @@
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
 import {createViewportSync} from './viewport';
-import {applyWallFinishes} from './wall-finishes';
+import {installInteriorLibrary} from './interior-library';
 import {createMemoryQuest} from './memory';
 import {installMemoryObjects} from './memory-world';
 import {createInteractionMarker} from './interaction-marker';
@@ -15,8 +15,9 @@ import './style.css';
 import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, HemisphericLight, DirectionalLight, ShadowGenerator, ArcRotateCamera, TransformNode, Mesh, PointerEventTypes, Ray, DynamicTexture } from '@babylonjs/core';
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
+const interiorCheck=import.meta.env.DEV&&location.pathname==='/checks/interior.html';
 const memoryCheck=import.meta.env.DEV&&location.pathname==='/checks/house.html';
-const roomStorageKey=memoryCheck?'logictown-memory-check-room':'logictown-room';
+const roomStorageKey=memoryCheck||interiorCheck?'logictown-memory-check-room':'logictown-room';
 let saved:{clue?:boolean;solved?:boolean}={};
 try{saved=JSON.parse(localStorage.getItem('logictown-v1')||'{}')}catch{}
 let clue=!!saved.clue, solved=!!saved.solved;
@@ -184,9 +185,9 @@ const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAc
  leavingHouse=true;marker.isVisible=false;route=[new Vector3(22,.11,-5.1)];memoryObjects?.sync();
  arrival=()=>{leavingHouse=false;modal(`<div class="memory"><h2 id="modal-title">За порогом</h2><p>Дверь открыта. Лея вышла из дома — впереди Тихий город.</p><blockquote>«Теперь у тебя есть своя история».</blockquote><button class="primary" id="return-home">Вернуться в дом</button></div>`);$('#return-home').onclick=returnHome};
 
-}},memoryCheck?'logictown-memory-check-v1':'logictown-memory-v1');
+}},memoryCheck||interiorCheck?'logictown-memory-check-v1':'logictown-memory-v1');
 memoryObjects=installMemoryObjects(scene,shadow,houseRooms,memory);memoryObjects.sync();
-applyWallFinishes(scene,houseRooms);
+const interior=installInteriorLibrary(scene,shadow,houseRooms);
 const cameraWalls=Array.from(houseRooms.values()).flatMap(room=>room.root.getChildMeshes()).filter(m=>m.isEnabled()&&/wall|open passage/.test(m.name)&&!/tile|clock/.test(m.name)).map(mesh=>{
  mesh.computeWorldMatrix(true);if(mesh.material){mesh.material.backFaceCulling=false;mesh.material.disableDepthWrite=false;mesh.material.forceDepthWrite=true}
  const b=mesh.getBoundingInfo().boundingBox;return {min:b.minimumWorld.clone(),max:b.maximumWorld.clone()};
@@ -204,6 +205,7 @@ const returnPin=createInteractionMarker(scene,'Вернуться в дом','�
 $('#app').insertAdjacentHTML('beforeend',`<nav class="house-nav" aria-label="План дома">${Object.entries(roomNames).map(([id,name])=>`<button data-room="${id}" aria-pressed="${id==='bedroom'}">${name}</button>`).join('')}</nav><aside class="room-story quest" hidden><div class="quest-head">Наш дом <span>⌂</span></div><h2></h2><p></p><span class="room-count"></span></aside>`);
 let roomAnchors:{marker:ReturnType<typeof createInteractionMarker>;approach:Vector3}[]=[];
 function switchRoom(id:RoomId){
+ void interior.ensure(id);
  currentRoom=id;const cfg=roomInfo[id];
  $('.location h1').textContent=roomNames[id];$('.location p').textContent=cfg.description;document.title=roomNames[id]+' — Тихий город';canvas.setAttribute('aria-label','Единый дом Леи. Сейчас: '+roomNames[id]+'. Управление: кнопки справа или WASD. Значки появляются рядом с предметами.');
  document.querySelectorAll<HTMLButtonElement>('[data-room]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.room===id)));
@@ -222,6 +224,7 @@ function switchRoom(id:RoomId){
 for(const b of Array.from(document.querySelectorAll<HTMLButtonElement>('[data-room]')))b.onclick=()=>{const id=b.dataset.room as RoomId,cfg=roomInfo[id];walkTo(new Vector3(layout[id][0]+cfg.spawn[0],.11,layout[id][1]+cfg.spawn[1]));};
 let initialRoom:RoomId='bedroom';try{const stored=localStorage.getItem(roomStorageKey);if(stored&&stored in roomInfo)initialRoom=stored as RoomId}catch{}
 if(memoryCheck)initialRoom='hall';
+if(interiorCheck){const id=new URLSearchParams(location.search).get('room');initialRoom=id&&id in roomInfo?id as RoomId:'bedroom'}
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
 girl.rotation.y=0;camera.alpha=-Math.PI/2;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
@@ -256,7 +259,11 @@ engine.runRenderLoop(()=>{viewport.update();const dt=Math.min(engine.getDeltaTim
 
 
 viewport.update();updateUI();
-scene.onAfterRenderObservable.addOnce(()=>{$('.loading').hidden=true});
+void interior.ensure(initialRoom).then(async()=>{
+ $('.loading').hidden=true;
+ // Warm the remaining rooms in the background so nearby doorways show finished furniture.
+ for(const id of houseRooms.keys())if(id!==initialRoom)await interior.ensure(id);
+});
 
 
 
