@@ -25,7 +25,9 @@ export function createWallOcclusion(rooms:Map<RoomId,HouseRoom>){
    if(isWall){
     group.boxes.push({min:min.clone(),max:max.clone()});
     // Walls must occlude from both sides and participate in the depth buffer.
-    if(mesh.material){const material=mesh.material.clone(mesh.material.name+' solid wall');if(material){material.backFaceCulling=false;material.disableDepthWrite=false;material.forceDepthWrite=true;mesh.material=material;}}
+    // DynamicTexture.clone() creates an empty canvas, so retain the painted texture.
+    // These opaque materials can safely share the same depth/culling settings.
+    if(mesh.material){mesh.material.backFaceCulling=false;mesh.material.disableDepthWrite=false;mesh.material.forceDepthWrite=true;}
    }
   }
   groups.push(...buckets.filter(g=>g.boxes.length));
