@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {moveWithCollisions,nearInteraction} from '../src/movement.ts';
+const free=()=>false;
+let p=moveWithCollisions({x:0,z:0},0,1,free);assert(Math.abs(p.z-1)<1e-9&&p.x===0);
+p=moveWithCollisions({x:0,z:0},Math.PI/2,1,free);assert(Math.abs(p.x-1)<1e-9&&Math.abs(p.z)<1e-9);
+p=moveWithCollisions({x:0,z:0},0,-1,free);assert(Math.abs(p.z+1)<1e-9);
+p=moveWithCollisions({x:0,z:0},0,10,(_,z)=>z>=1&&z<=1.2);assert(p.z<1,'cannot tunnel through thin walls');
+p=moveWithCollisions({x:0,z:0},Math.PI/4,2,(x)=>x>.5);assert(p.x<=.5&&p.z>1,'slide along obstacle');
+assert(nearInteraction({x:0,z:0},{x:1,z:1}));assert(!nearInteraction({x:0,z:0},{x:2,z:0}));
+console.log('Movement: forward, reverse, turns, wall blocking, sliding and interaction range passed');

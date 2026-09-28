@@ -37,7 +37,7 @@ export function createWallOcclusion(rooms:Map<RoomId,HouseRoom>){
   const right=Vector3.Cross(Vector3.Up(),towardCamera).normalize();
   const probes=[.25,.85,1.55].flatMap(y=>[-.3,0,.3].map(x=>girl.position.add(new Vector3(0,y,0)).add(right.scale(x))));
   for(const group of groups){
-   if(group.boxes.some(b=>probes.some(p=>blocksView(p,towardCamera,b.min,b.max))))group.lastHit=now;
+   if(group.boxes.some(b=>probes.some(p=>{const ray=camera.position.subtract(p);return blocksView(p,ray.normalizeToNew(),b.min,b.max,ray.length())})))group.lastHit=now;
    const visible=now-group.lastHit>.2;
    for(const mesh of group.meshes)mesh.isVisible=visible;
   }

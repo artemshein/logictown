@@ -1,3 +1,5 @@
+import {createMovementControls} from './controls';
+import {moveWithCollisions,nearInteraction} from './movement';
 import {createViewportSync} from './viewport';
 import {applyWallFinishes} from './wall-finishes';
 import {createMemoryQuest} from './memory';
@@ -18,7 +20,7 @@ let saved:{clue?:boolean;solved?:boolean}={};
 try{saved=JSON.parse(localStorage.getItem('logictown-v1')||'{}')}catch{}
 let clue=!!saved.clue, solved=!!saved.solved;
 function save(){try{localStorage.setItem('logictown-v1',JSON.stringify({clue,solved}))}catch{}}
-$('#app').innerHTML=`<canvas id="world" aria-label="Трёхмерная комната Леи. Нажимайте на пол для перемещения."></canvas>
+$('#app').innerHTML=`<canvas id="world" aria-label="Трёхмерная комната Леи. Управление: кнопки справа или WASD. Значки появляются рядом с предметами."></canvas>
 <header class="topbar"><div class="brand"><div class="brand-mark">⌂</div><div><strong>Тихий город</strong><small>МАЛЕНЬКИЕ ШАГИ · БОЛЬШИЕ ОТКРЫТИЯ</small></div></div><div class="top-actions"><button class="round" id="character-preview" aria-label="Посмотреть Лею крупно" title="Посмотреть Лею крупно">♙</button><button class="round" id="sound" aria-label="Включить звук" title="Звук">♪</button><button class="round" id="help" aria-label="Как играть" title="Как играть">?</button></div></header>
 <section class="location"><div class="eyebrow">Глава 01 / Дом</div><h1>Комната Леи</h1><p>У каждого открытия<br>есть маленькое начало.</p><div class="chapter"><span></span><i></i><i></i><i></i><i></i> ПЕРВАЯ ИСТОРИЯ</div></section>
 <aside class="quest"><div class="quest-head"><span>Маленькая загадка</span><span>✧</span></div><h2 id="quest-title">Мелодия утра</h2><p>Бабушка оставила сюрприз.<br>Интересно, как открыть<br>музыкальную шкатулку?</p><div class="quest-line" id="clue-step"><span class="check"></span>Найди бабушкину записку</div><div class="quest-line" id="box-step"><span class="check"></span>Открой шкатулку</div><button class="hint" id="hint">Нужна маленькая подсказка?</button></aside>
@@ -31,9 +33,9 @@ const canvas=$<HTMLCanvasElement>('#world');
 const engine=new Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,adaptToDeviceRatio:false});
 engine.setHardwareScalingLevel(1/Math.min(window.devicePixelRatio,1.5));
 const scene=new Scene(engine);scene.clearColor=new Color4(.914,.914,.868,1);
-const camera=new ArcRotateCamera('camera',-Math.PI/2+.69,1.02,17,new Vector3(0,.8,0),scene);
-camera.mode=1;camera.minZ=.1;camera.maxZ=100;
-const viewport=createViewportSync(canvas,engine,aspect=>{const span=Math.max(6.2,5.65/aspect);camera.orthoTop=span;camera.orthoBottom=-span;camera.orthoLeft=-span*aspect;camera.orthoRight=span*aspect;camera.target.y=aspect<.8?.55:.9;camera.getProjectionMatrix(true)});
+const camera=new ArcRotateCamera('camera',-Math.PI/2,1.12,4.3,new Vector3(0,1,0),scene);
+camera.mode=0;camera.minZ=.05;camera.maxZ=100;camera.fov=.9;
+const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;camera.radius=aspect<.8?4.6:4.3;camera.getProjectionMatrix(true)});
 import.meta.hot?.dispose(()=>viewport.dispose());
 const hemi=new HemisphericLight('sky',new Vector3(0,1,0),scene);hemi.intensity=.85;hemi.diffuse=Color3.FromHexString('#fff1d8');hemi.groundColor=Color3.FromHexString('#85968e');
 const sun=new DirectionalLight('sun',new Vector3(-.7,-1,-.5),scene);sun.position=new Vector3(6,10,6);sun.intensity=2;sun.diffuse=Color3.FromHexString('#ffe2b1');
@@ -156,11 +158,11 @@ function nearest(p:Vector3){let best=-1,dist=Infinity;for(let i=0;i<nx*nz;i++){c
 let leavingHouse=false;
 let route:Vector3[]=[],arrival:(()=>void)|null=null;
 function walkTo(p:Vector3,action?:()=>void){if(!$('.overlay').hidden)return;const start=nearest(girl.position),end=nearest(p);const queue=[start],prev=new Map<number,number>();prev.set(start,-1);for(let k=0;k<queue.length&&!prev.has(end);k++){const cur=queue[k];for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){const x=cur%nx+dx,z=Math.floor(cur/nx)+dz,id=z*nx+x;if(x<0||x>=nx||z<0||z>=nz||prev.has(id))continue;const q=point(id);if(!walkable[id])continue;prev.set(id,cur);queue.push(id)}}if(!prev.has(end)){toast('Сюда пока не пройти. Попробуй другую точку.');return}const ids=[];for(let i=end;i!==start;i=prev.get(i)!)ids.push(i);route=ids.reverse().map(point);arrival=action||null;marker.position.copyFrom(point(end));marker.position.y=.105;marker.isVisible=true;if(!route.length){arrival?.();arrival=null;marker.isVisible=false;}}
-canvas.addEventListener('pointerup',e=>{if(!$('.overlay').hidden)return;const rect=canvas.getBoundingClientRect();if(leavingHouse||girl.position.x>20)return;const pick=scene.pick(e.clientX-rect.left,e.clientY-rect.top,m=>floors.has(m as Mesh));if(pick?.hit&&pick.pickedPoint)walkTo(pick.pickedPoint)});
+const controls=createMovementControls($('#app'));import.meta.hot?.dispose(()=>controls.dispose());
 
 let toastTimer=0;function toast(text:string){$('.toast').textContent=text;$('.toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=window.setTimeout(()=>$('.toast').classList.remove('visible'),4200)}
 let lastFocus:HTMLElement|null=null;
-function modal(html:string){lastFocus=document.activeElement as HTMLElement;$('.modal').innerHTML=`<button class="close" aria-label="Закрыть">×</button>${html}`;$('.overlay').hidden=false;$('.close').onclick=closeModal;$('.close').focus();}
+function modal(html:string){controls.clear();lastFocus=document.activeElement as HTMLElement;$('.modal').innerHTML=`<button class="close" aria-label="Закрыть">×</button>${html}`;$('.overlay').hidden=false;$('.close').onclick=closeModal;$('.close').focus();}
 function closeModal(){$('.overlay').hidden=true;lastFocus?.focus();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Tab'&&!$('.overlay').hidden){const items=Array.from(document.querySelectorAll<HTMLElement>('.modal button'));const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
 $('.overlay').addEventListener('click',e=>{if(e.target===$('.overlay'))closeModal()});
@@ -190,17 +192,17 @@ const returnPin=document.createElement('button');returnPin.className='pin';retur
 const anchors=[{id:'#pin-note',p:new Vector3(-.05,1.9,2.05)},{id:'#pin-box',p:new Vector3(2.73,2.08,2.54)},{id:'#pin-plant',p:new Vector3(3.26,2.08,.69)}];
 // The room graph is shared by door navigation, room selection and collision checks.
 $('#app').insertAdjacentHTML('beforeend',`<nav class="house-nav" aria-label="План дома">${Object.entries(roomNames).map(([id,name])=>`<button data-room="${id}" aria-pressed="${id==='bedroom'}">${name}</button>`).join('')}</nav><aside class="room-story quest" hidden><div class="quest-head">Наш дом <span>⌂</span></div><h2></h2><p></p><span class="room-count"></span></aside><div id="house-pins"></div>`);
-let roomAnchors:{el:HTMLElement;p:Vector3}[]=[];
+let roomAnchors:{el:HTMLElement;p:Vector3;approach:Vector3}[]=[];
 function switchRoom(id:RoomId){
  currentRoom=id;const cfg=roomInfo[id];
- $('.location h1').textContent=roomNames[id];$('.location p').textContent=cfg.description;document.title=roomNames[id]+' — Тихий город';canvas.setAttribute('aria-label','Единый дом Леи. Сейчас: '+roomNames[id]+'. Нажимайте на пол для перемещения.');
+ $('.location h1').textContent=roomNames[id];$('.location p').textContent=cfg.description;document.title=roomNames[id]+' — Тихий город';canvas.setAttribute('aria-label','Единый дом Леи. Сейчас: '+roomNames[id]+'. Управление: кнопки справа или WASD. Значки появляются рядом с предметами.');
  document.querySelectorAll<HTMLButtonElement>('[data-room]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.room===id)));
  document.querySelector<HTMLElement>('aside.quest:not(.room-story)')!.hidden=id!=='bedroom';
  $('.room-story').hidden=id==='bedroom';$('.room-story h2').textContent=roomNames[id];$('.room-story p').textContent=cfg.story;$('.room-count').textContent='Единый дом · Без загрузок';
  for(const a of anchors)$(a.id).hidden=true;
  const pins=$('#house-pins');pins.replaceChildren();roomAnchors=[];
  const room=houseRooms.get(id)!,offset=new Vector3(layout[id][0],0,layout[id][1]);
- for(const spot of room.hotspots){const b=document.createElement('button');b.className='pin';b.textContent=spot.icon;b.title=spot.label;b.setAttribute('aria-label',spot.label);b.onclick=()=>walkTo(spot.approach.add(offset),()=>{characterAction('Interact');spot.activate?.();if(spot.message)toast(spot.message)});pins.append(b);roomAnchors.push({el:b,p:spot.position.add(offset)})}
+ for(const spot of room.hotspots){const b=document.createElement('button');b.className='pin';b.textContent=spot.icon;b.title=spot.label;b.setAttribute('aria-label',spot.label);b.onclick=()=>{if(!nearInteraction(girl.position,spot.approach.add(offset)))return;walkTo(spot.approach.add(offset),()=>{characterAction('Interact');spot.activate?.();if(spot.message)toast(spot.message)});};b.hidden=true;pins.append(b);roomAnchors.push({el:b,p:spot.position.add(offset),approach:spot.approach.add(offset)})}
  try{localStorage.setItem(roomStorageKey,id)}catch{}
 }
 for(const b of Array.from(document.querySelectorAll<HTMLButtonElement>('[data-room]')))b.onclick=()=>{const id=b.dataset.room as RoomId,cfg=roomInfo[id];walkTo(new Vector3(layout[id][0]+cfg.spawn[0],.11,layout[id][1]+cfg.spawn[1]));};
@@ -208,9 +210,26 @@ let initialRoom:RoomId='bedroom';try{const stored=localStorage.getItem(roomStora
 if(memoryCheck)initialRoom='hall';
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
-camera.target.set(girl.position.x,.8,girl.position.z);switchRoom(initialRoom);
+girl.rotation.y=0;camera.alpha=-Math.PI/2;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
 let time=0;
-engine.runRenderLoop(()=>{viewport.update();const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const moving=route.length>0&&$('.overlay').hidden;if(moving){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*1.85){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*1.85/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);camera.target.x+=(girl.position.x-camera.target.x)*Math.min(1,dt*4);camera.target.z+=(girl.position.z-camera.target.z)*Math.min(1,dt*4);sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();updateWallOcclusion(camera,girl,time);scene.render();returnPin.hidden=girl.position.x<=20;for(const a of [{el:returnPin,p:new Vector3(21.3,1.2,-5.1)},...(currentRoom==='bedroom'?anchors.map(a=>({el:$(a.id),p:a.p})):[]),...roomAnchors]){const p=Vector3.Project(a.p,Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));const el=a.el;el.style.left=`${p.x/engine.getRenderWidth()*canvas.clientWidth}px`;el.style.top=`${p.y/engine.getRenderHeight()*canvas.clientHeight}px`;}});
+engine.runRenderLoop(()=>{viewport.update();const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const input=controls.read($('.overlay').hidden&&!leavingHouse);
+ const manual=(input.forward!==0||input.turn!==0)&&!leavingHouse;
+ let manualMoving=false;
+ if(manual){route=[];arrival=null;marker.isVisible=false;characterActionUntil=0;girl.rotation.y+=input.turn*dt*2.2;
+ const outside=girl.position.x>20;
+ const collides=(x:number,z:number)=>outside?(x<20.1||x>26.7||z< -8.2||z> -2):blocked(x,z);
+ const next=moveWithCollisions(girl.position,girl.rotation.y,input.forward*dt*1.85,collides);manualMoving=Math.hypot(next.x-girl.position.x,next.z-girl.position.z)>.0001;girl.position.x=next.x;girl.position.z=next.z;
+ }
+ const moving=manualMoving||route.length>0&&$('.overlay').hidden;if(route.length&&$('.overlay').hidden){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*1.85){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*1.85/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);const cameraAlpha=-Math.PI/2-girl.rotation.y;camera.alpha+=Math.atan2(Math.sin(cameraAlpha-camera.alpha),Math.cos(cameraAlpha-camera.alpha))*(1-Math.exp(-dt*7));
+ camera.target.x+=(girl.position.x+Math.sin(girl.rotation.y)*.35-camera.target.x)*(1-Math.exp(-dt*10));camera.target.z+=(girl.position.z+Math.cos(girl.rotation.y)*.35-camera.target.z)*(1-Math.exp(-dt*10));camera.target.y=1;
+ sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();updateWallOcclusion(camera,girl,time);scene.render();for(const a of [{el:returnPin,p:new Vector3(21.3,1.2,-5.1),approach:new Vector3(22,.11,-5.1)},...roomAnchors]){
+ const near=nearInteraction(girl.position,a.approach)&&$('.overlay').hidden&&(a.el!==returnPin||girl.position.x>20);
+ const p=Vector3.Project(a.p,Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));
+ const onscreen=p.z>0&&p.z<1;
+ a.el.hidden=!near||!onscreen;
+ if(!a.el.hidden){a.el.style.left=`${Math.max(26,Math.min(canvas.clientWidth-26,p.x/engine.getRenderWidth()*canvas.clientWidth))}px`;a.el.style.top=`${Math.max(55,Math.min(canvas.clientHeight-155,p.y/engine.getRenderHeight()*canvas.clientHeight))}px`;}
+ }});
+
 viewport.update();updateUI();
 scene.onAfterRenderObservable.addOnce(()=>{$('.loading').hidden=true});
 
