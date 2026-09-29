@@ -3,6 +3,7 @@ import type {HouseRoom} from './house';
 import type {RoomId} from './house-data';
 import '@babylonjs/loaders/glTF';
 import {applyWallFinishes} from './wall-finishes';
+import {installCarpets} from './carpets';
 
 type Furniture={room:RoomId;asset:string;p:[number,number,number];size:[number,number,number];angle?:number;hide:RegExp;filter?:(m:AbstractMesh)=>boolean};
 const furniture:Furniture[]=[
@@ -65,6 +66,7 @@ export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:
  installMaterials(scene,rooms);
  // Keep the room-specific wallpaper, panelling and tile bands above library finishes.
  applyWallFinishes(scene,rooms);
+ installCarpets(scene,rooms);
  return {ensure};
 }
 
