@@ -20,6 +20,14 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
     }
     if(animation.targetProperty==='position'&&value instanceof Vector3)target.position.copyFrom(value);
   }
+  // The original right arm is posed with its hand on the hip. Mirror the
+  // relaxed left arm so both hands hang naturally at the sides.
+  for(const left of result.transformNodes.filter(n=>/:Left(Shoulder|Arm|ForeArm|Hand)/.test(n.name))){
+    const counterpart=left.name.replace(':Left',':Right').replace(/_\d+$/,'_');
+    const right=result.transformNodes.find(n=>n.name.startsWith(counterpart));
+    const q=left.rotationQuaternion;
+    if(right&&q)right.rotationQuaternion=new Quaternion(q.x,-q.y,-q.z,q.w);
+  }
   const animatedJoints=[
     ['LeftUpLeg',.25],['RightUpLeg',-.25],['LeftLeg',-.12],['RightLeg',.12],
     ['LeftArm',-.15],['RightArm',.15],
