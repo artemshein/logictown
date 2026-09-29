@@ -16,3 +16,12 @@ for(const asset of credits){
  }else for(const map of ['color','normal','roughness'])assert((await stat(`${root}/${asset.id}/${map}.jpg`)).size>0);
 }
 console.log(`${credits.filter(a=>a.type==='model').length} valid CC0 models, ${Math.round(total/1024/1024*10)/10} MB total; all texture maps present`);
+const fixtures=JSON.parse(await readFile('public/assets/fixtures/credits.json','utf8'));
+for(const asset of fixtures){
+ assert.equal(asset.license,'CC0-1.0');assert(asset.source.startsWith('https://3dassets.dev/assets/'));
+ const data=await readFile('public/assets/fixtures/'+asset.file);
+ const report=await validateBytes(new Uint8Array(data),{maxIssues:20});
+ assert.equal(report.issues.numErrors,0,asset.file+': '+JSON.stringify(report.issues.messages));
+ assert(data.length<500000);assert(asset.triangles<4000);
+}
+console.log('Fridge, bathtub and toilet: valid CC0 GLBs, each under 500 KB / 4000 triangles');

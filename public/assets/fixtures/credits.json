@@ -1,0 +1,32 @@
+[
+  {
+    "file": "fridge.glb",
+    "title": "Freestanding fridge freezer 600 (Home Appliances and Utility Room)",
+    "source": "https://3dassets.dev/assets/home-appliances-and-utility-fridge-freezer-freestandin-c577bb9f",
+    "download": "https://cdn.3dassets.dev/assets/14034/v1/model.glb",
+    "author": "3D Assets",
+    "license": "CC0-1.0",
+    "aiGenerated": true,
+    "triangles": 1836
+  },
+  {
+    "file": "bathtub.glb",
+    "title": "Freestanding bath 1720 (Fitted Kitchen and Bathroom Builder)",
+    "source": "https://3dassets.dev/assets/fitted-kitchen-and-bathroom-builder-bath-freestanding-cf760e24",
+    "download": "https://cdn.3dassets.dev/assets/17868/v1/model.glb",
+    "author": "3D Assets",
+    "license": "CC0-1.0",
+    "aiGenerated": true,
+    "triangles": 1624
+  },
+  {
+    "file": "toilet.glb",
+    "title": "Close coupled WC (Fitted Kitchen and Bathroom Builder)",
+    "source": "https://3dassets.dev/assets/fitted-kitchen-and-bathroom-builder-wc-close-coupled-13e88a96",
+    "download": "https://cdn.3dassets.dev/assets/17870/v1/model.glb",
+    "author": "3D Assets",
+    "license": "CC0-1.0",
+    "aiGenerated": true,
+    "triangles": 1920
+  }
+]

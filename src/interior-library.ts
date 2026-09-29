@@ -1,10 +1,14 @@
-import {MaterialPluginBase,Color3,LoadAssetContainerAsync,PBRMaterial,Texture,TransformNode,Vector3,VertexBuffer,type AssetContainer,type Mesh,type Scene,type ShadowGenerator,type AbstractMesh} from '@babylonjs/core';
+import {MeshBuilder,MaterialPluginBase,Color3,LoadAssetContainerAsync,PBRMaterial,Texture,TransformNode,Vector3,VertexBuffer,type AssetContainer,type Mesh,type Scene,type ShadowGenerator,type AbstractMesh} from '@babylonjs/core';
 import type {HouseRoom} from './house';
 import type {RoomId} from './house-data';
 import '@babylonjs/loaders/glTF';
+import {applyWallFinishes} from './wall-finishes';
 
 type Furniture={room:RoomId;asset:string;p:[number,number,number];size:[number,number,number];angle?:number;hide:RegExp;filter?:(m:AbstractMesh)=>boolean};
 const furniture:Furniture[]=[
+ {room:'kitchen',asset:'../fixtures/fridge',p:[-3.22,.06,1.48],size:[1.14,2.45,1.18],angle:Math.PI,hide:/^kitchen (refrigerator|fridge |freezer )/},
+ {room:'bathroom',asset:'../fixtures/bathtub',p:[-2,.06,1.05],size:[1.65,1,3.22],angle:Math.PI/2,hide:/^bathroom bath (bottom|side|end|water)$/},
+ {room:'toilet',asset:'../fixtures/toilet',p:[-1.35,.06,1.5],size:[.8,1.4,1.45],angle:Math.PI,hide:/^(toilet (toilet cistern|cistern lid|flush button|toilet pedestal|toilet bowl|toilet inset)|toilet seat)$/},
  {room:'bedroom',asset:'vintage_day_bed',p:[-2.72,.08,1.43],size:[1.75,1.55,3],angle:Math.PI/2,hide:/^(bed |headboard|mattress|pillow|soft draped quilt|turned bedpost|teddy)/},
  {room:'bedroom',asset:'painted_wooden_table',p:[.22,.06,2.12],size:[2.18,1.135,1.04],angle:Math.PI,hide:/^desk /},
  {room:'bedroom',asset:'wooden_bookshelf_worn',p:[2.85,.06,2.61],size:[1.8,1.2,.77],angle:0,hide:/^(cabinet |book$|book spine line|linen basket|basket weave)/},
@@ -47,6 +51,11 @@ export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:
   fit.position.set(item.p[0]-center.x*fit.scaling.x,item.p[1]-min.y*fit.scaling.y,item.p[2]-center.z*fit.scaling.z);
   root.getChildMeshes().forEach(m=>{m.receiveShadows=true;m.isPickable=true;shadow.addShadowCaster(m);if(m.material instanceof PBRMaterial)m.material.environmentIntensity=.55});
   root.setEnabled(true);
+  if(item.asset==='../fixtures/bathtub'){
+   const old=originals.get('bathroom')!.find(m=>m.name==='bathroom bath water');
+   const water=MeshBuilder.CreateDisc('library bath water',{radius:1,tessellation:64,sideOrientation:2},scene);
+   water.parent=rooms.get('bathroom')!.root;water.position.set(-2,.79,1.05);water.rotation.x=Math.PI/2;water.scaling.set(.51,1.28,1);water.material=old?.material??null;water.isPickable=false;
+  }
   for(const m of originals.get(item.room)!)if(item.hide.test(m.name)&&(!item.filter||item.filter(m)))m.setEnabled(false);
  }
  async function ensure(id:RoomId){
@@ -54,6 +63,8 @@ export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:
   const task=(async()=>{for(const item of furniture.filter(i=>i.room===id))try{await replace(item)}catch(error){console.error('Furniture load failed: '+item.asset,error)}})();pending.set(id,task);return task;
  }
  installMaterials(scene,rooms);
+ // Keep the room-specific wallpaper, panelling and tile bands above library finishes.
+ applyWallFinishes(scene,rooms);
  return {ensure};
 }
 
