@@ -9,15 +9,16 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
   result.meshes.forEach(m=>{m.receiveShadows=true;m.isPickable=false;shadow?.addShadowCaster(m)});
   if(!scene.environmentTexture){scene.environmentTexture=new HDRCubeTexture('/models/studio.hdr',scene,64,false,true,false,true);scene.environmentIntensity=.55;}
   const clips=new Map<string,AnimationGroup>();result.animationGroups.forEach(g=>{g.stop();clips.set(g.name.split('|').pop()!,g)});
-  // The supplied idle clip is a T-pose, while the bind pose has bent legs.
-  // Keep the relaxed upper body from the bind pose and straighten the legs
-  // with the idle keys before building the walk cycle.
+  // The supplied idle clip is upright but holds the arms in a T-pose. The
+  // bind pose lowers the arms, but its torso leans to one side. Combine the
+  // upright idle body with the relaxed bind-pose arms.
   for(const {target,animation} of clips.get('idle')?.targetedAnimations??[]){
-    if(!(target instanceof TransformNode)||!/:((Left|Right)(UpLeg|Leg|Foot|ToeBase|Toe_End))_/.test(target.name))continue;
+    if(!(target instanceof TransformNode)||/:(Left|Right)(Shoulder|Arm|ForeArm|Hand)/.test(target.name))continue;
+    const value=animation.getKeys()[0]?.value;
     if(animation.targetProperty==='rotationQuaternion'){
-      const value=animation.getKeys()[0]?.value;
       if(value instanceof Quaternion)target.rotationQuaternion=value.clone();
     }
+    if(animation.targetProperty==='position'&&value instanceof Vector3)target.position.copyFrom(value);
   }
   const animatedJoints=[
     ['LeftUpLeg',.25],['RightUpLeg',-.25],['LeftLeg',-.12],['RightLeg',.12],
