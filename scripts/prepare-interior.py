@@ -1,12 +1,14 @@
-import bpy,json,math
+import bpy,json,math,sys
 from pathlib import Path
 from mathutils import Vector
 root=Path(__file__).resolve().parents[1]
 source=root/'.asset-cache/polyhaven'
 output=root/'public/assets/polyhaven'
 output.mkdir(parents=True,exist_ok=True)
-stats=[]
+selected=set(sys.argv[sys.argv.index('--')+1:]) if '--' in sys.argv else None
+stats={item['id']:item for item in json.loads((output/'models.json').read_text())} if selected and (output/'models.json').exists() else {}
 for path in source.glob('*/model.gltf'):
+    if selected is not None and path.parent.name not in selected:continue
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(path))
     meshes=[o for o in bpy.context.scene.objects if o.type=='MESH']
@@ -28,6 +30,6 @@ for path in source.glob('*/model.gltf'):
     target=output/(path.parent.name+'.glb')
     bpy.ops.export_scene.gltf(filepath=str(target),export_format='GLB',export_image_format='AUTO',export_yup=True)
     triangles=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)
-    stats.append(dict(id=path.parent.name,triangles=triangles,dimensions=list(hi-lo),bytes=target.stat().st_size))
-    print('PREPARED',stats[-1],flush=True)
-(output/'models.json').write_text(json.dumps(stats,indent=2))
+    stats[path.parent.name]=dict(id=path.parent.name,triangles=triangles,dimensions=list(hi-lo),bytes=target.stat().st_size)
+    print('PREPARED',stats[path.parent.name],flush=True)
+(output/'models.json').write_text(json.dumps(list(stats.values()),indent=2)+'\n')

@@ -5,29 +5,29 @@ import '@babylonjs/loaders/glTF';
 import {applyWallFinishes} from './wall-finishes';
 import {installCarpets} from './carpets';
 
-type Furniture={room:RoomId;asset:string;p:[number,number,number];size:[number,number,number];angle?:number;hide:RegExp;filter?:(m:AbstractMesh)=>boolean};
+type Furniture={room:RoomId;asset:string;p:[number,number,number];size:[number,number,number];angle?:number;hide:RegExp;finish?:string;filter?:(m:AbstractMesh)=>boolean};
 const furniture:Furniture[]=[
  {room:'kitchen',asset:'../fixtures/fridge',p:[3.2,.06,2.7],size:[1.14,2.45,1.18],angle:Math.PI,hide:/^kitchen (refrigerator|fridge |freezer )/},
  {room:'kitchen',asset:'electric_stove',p:[-1.68,.06,2.7],size:[1.04,1.16,1.03],angle:Math.PI,hide:/^kitchen (lower cabinet|cabinet front|brass pull|countertop|oven|burner)/,filter:m=>Math.abs(m.position.x+1.68)<.52},
- {room:'kitchen',asset:'painted_wooden_cabinet',p:[-3.2,.06,1.45],size:[1.05,1.15,1.05],angle:Math.PI/2,hide:/^kitchen unused cabinet$/},
+ {room:'kitchen',asset:'painted_wooden_cabinet',p:[-3.2,.06,1.45],size:[1.05,1.15,1.05],angle:Math.PI/2,finish:'#9ab09a',hide:/^kitchen unused cabinet$/},
  {room:'kitchen',asset:'pot_enamel_01',p:[-1.68,1.18,2.7],size:[.35,.25,.35],hide:/^kitchen unused pot$/},
  {room:'kitchen',asset:'wooden_cutting_board',p:[-2.8,1.22,2.7],size:[.42,.035,.32],hide:/^kitchen unused board$/},
  {room:'bathroom',asset:'../fixtures/bathtub',p:[-2,.06,1.05],size:[1.65,1,3.22],angle:Math.PI/2,hide:/^bathroom bath (bottom|side|end|water)$/},
  {room:'toilet',asset:'../fixtures/toilet',p:[-1.35,.06,1.5],size:[.8,1.4,1.45],angle:Math.PI,hide:/^(toilet (toilet cistern|cistern lid|flush button|toilet pedestal|toilet bowl|toilet inset)|toilet seat)$/},
  {room:'bedroom',asset:'vintage_day_bed',p:[-2.72,.08,1.43],size:[1.75,1.55,3],angle:Math.PI/2,hide:/^(bed |headboard|mattress|pillow|soft draped quilt|turned bedpost|teddy)/},
- {room:'bedroom',asset:'painted_wooden_table',p:[.22,.06,2.12],size:[2.18,1.135,1.04],angle:Math.PI,hide:/^desk /},
- {room:'bedroom',asset:'wooden_bookshelf_worn',p:[2.85,.06,2.61],size:[1.8,1.2,.77],angle:0,hide:/^(cabinet |book$|book spine line|linen basket|basket weave)/},
- {room:'bedroom',asset:'wooden_stool_02',p:[.25,.06,1.13],size:[.6,.66,.55],hide:/^stool /},
+ {room:'bedroom',asset:'painted_wooden_table',p:[.22,.06,2.12],size:[2.18,1.135,1.04],angle:Math.PI,finish:'#648982',hide:/^desk /},
+ {room:'bedroom',asset:'wooden_display_shelves_01',p:[2.85,.06,2.61],size:[1.8,1.2,.77],angle:Math.PI/2,hide:/^(cabinet |book$|book spine line|linen basket|basket weave)/},
+ {room:'bedroom',asset:'wooden_stool_02',p:[.25,.06,1.13],size:[.6,.66,.55],finish:'#ae8454',hide:/^stool /},
  {room:'bedroom',asset:'wicker_basket_01',p:[-3.15,.06,-2.27],size:[.84,.58,.72],hide:/^(floor basket|basket seam|basket blanket)$/},
  {room:'bedroom',asset:'desk_lamp_arm_01',p:[-.57,1.20,2.36],size:[.32,.68,.42],hide:/^lamp /},
  {room:'living',asset:'sofa_03',p:[-1.25,.06,2.2],size:[3.65,1.55,1.4],angle:Math.PI,hide:/^living (sofa |seat cushion|soft pillow)/},
  {room:'living',asset:'modern_arm_chair_01',p:[2.55,.06,-.9],size:[1.2,1.5,1.1],angle:Math.PI,hide:/^living armchair/},
- {room:'living',asset:'WoodenTable_01',p:[-1,.06,-.15],size:[1.95,.65,1.15],hide:/^living coffee table/},
- {room:'living',asset:'wooden_bookshelf_worn',p:[-3.4,.06,-1.4],size:[.7,1.9,2.1],angle:Math.PI/2,hide:/^living (bookcase |bookshelf|book$)/},
- {room:'kitchen',asset:'painted_wooden_table',p:[-.15,.06,-.5],size:[2,.94,1.4],hide:/^kitchen (dining table|table legs)/},
- ...[-1.4,1.1].map(x=>({room:'kitchen' as const,asset:'painted_wooden_chair_02',p:[x,.06,-.5] as [number,number,number],size:[.56,1.15,.54] as [number,number,number],angle:x<0?Math.PI/2:-Math.PI/2,hide:/^kitchen chair /,filter:(m:AbstractMesh)=>Math.abs(m.position.x-x)<.3})),
- {room:'bathroom',asset:'painted_wooden_cabinet_02',p:[2.3,.06,.1],size:[.85,1.28,.6],angle:Math.PI,hide:/^bathroom towel stand$/},
- {room:'hall',asset:'wooden_stool_02',p:[3,.06,-1.15],size:[1.9,.58,.75],angle:0,hide:/^hall (hall bench|bench legs|bench cushion)/},
+ {room:'living',asset:'modern_coffee_table_01',p:[-1,.06,-.15],size:[1.95,.65,1.15],hide:/^living coffee table/},
+ {room:'living',asset:'wooden_display_shelves_01',p:[-3.4,.06,-1.4],size:[.7,1.9,2.1],angle:0,hide:/^living (bookcase |bookshelf|book$)/},
+ {room:'kitchen',asset:'painted_wooden_table',p:[-.15,.06,-.5],size:[2,.94,1.4],finish:'#c8af89',hide:/^kitchen (dining table|table legs)/},
+ ...[-1.4,1.1].map(x=>({room:'kitchen' as const,asset:'painted_wooden_chair_02',p:[x,.06,-.5] as [number,number,number],size:[.56,1.15,.54] as [number,number,number],angle:x<0?Math.PI/2:-Math.PI/2,finish:'#a6b8aa',hide:/^kitchen chair /,filter:(m:AbstractMesh)=>Math.abs(m.position.x-x)<.3})),
+ {room:'bathroom',asset:'painted_wooden_cabinet_02',p:[2.3,.06,.1],size:[.85,1.28,.6],angle:Math.PI,finish:'#c1d2c5',hide:/^bathroom towel stand$/},
+ {room:'hall',asset:'wooden_stool_02',p:[3,.06,-1.15],size:[1.9,.58,.75],angle:0,finish:'#ae8454',hide:/^hall (hall bench|bench legs|bench cushion)/},
 ];
 
 export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:Map<RoomId,HouseRoom>){
@@ -42,7 +42,7 @@ export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:
     filter:m=>{const b=m.getBoundingInfo().boundingBox.center;const center=m.position.add(b);return Math.hypot(center.x-p.x,center.z-p.z)<height*1.5&&center.y>=base-.05&&center.y<base+height*5}});
   }
  }
- const cache=new Map<string,Promise<AssetContainer>>(),pending=new Map<RoomId,Promise<void>>();
+ const cache=new Map<string,Promise<AssetContainer>>(),pending=new Map<RoomId,Promise<void>>(),finishes=new Map<string,PBRMaterial>();
  const load=(id:string)=>{let task=cache.get(id);if(!task){task=LoadAssetContainerAsync('/assets/polyhaven/'+id+'.glb',scene);cache.set(id,task);task.catch(()=>cache.delete(id))}return task};
  async function replace(item:Furniture){
   const container=await load(item.asset),root=new TransformNode('library '+item.asset,scene);
@@ -54,7 +54,7 @@ export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:
   const fit=new TransformNode('furniture fit '+item.asset,scene);root.parent=fit;fit.scaling.set(item.size[0]/extent.x,item.size[1]/extent.y,item.size[2]/extent.z);
   fit.parent=rooms.get(item.room)!.root;
   fit.position.set(item.p[0]-center.x*fit.scaling.x,item.p[1]-min.y*fit.scaling.y,item.p[2]-center.z*fit.scaling.z);
-  root.getChildMeshes().forEach(m=>{m.receiveShadows=true;m.isPickable=true;shadow.addShadowCaster(m);if(m.material instanceof PBRMaterial)m.material.environmentIntensity=.55});
+  root.getChildMeshes().forEach(m=>{m.receiveShadows=true;m.isPickable=true;shadow.addShadowCaster(m);if(item.finish){let paint=finishes.get(item.finish);if(!paint){paint=new PBRMaterial('clean furniture '+item.finish,scene);paint.albedoColor=Color3.FromHexString(item.finish).toLinearSpace();paint.metallic=0;paint.roughness=.78;paint.environmentIntensity=.4;finishes.set(item.finish,paint)}m.material=paint}else if(m.material instanceof PBRMaterial)m.material.environmentIntensity=.55});
   root.setEnabled(true);
   if(item.asset==='../fixtures/bathtub'){
    const old=originals.get('bathroom')!.find(m=>m.name==='bathroom bath water');

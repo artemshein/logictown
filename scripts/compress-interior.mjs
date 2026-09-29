@@ -1,17 +1,18 @@
 import {readFile,writeFile,readdir} from 'node:fs/promises';
 import sharp from 'sharp';
 const directory='public/assets/polyhaven';
-for(const file of (await readdir(directory)).filter(f=>f.endsWith('.glb'))){
+const selected=new Set(process.argv.slice(2));
+for(const file of (await readdir(directory)).filter(f=>f.endsWith('.glb')&&(!selected.size||selected.has(f.slice(0,-4))))){
  const data=await readFile(`${directory}/${file}`),jsonLength=data.readUInt32LE(12);
  const gltf=JSON.parse(data.subarray(20,20+jsonLength).toString()),binary=data.subarray(28+jsonLength);
  const replacements=new Map();
  for(const image of gltf.images??[]){
-  if(image.mimeType==='image/jpeg'&&file!=='electric_stove.glb')continue;
+  if(image.mimeType==='image/jpeg'&&!['electric_stove.glb','modern_wooden_cabinet.glb'].includes(file))continue;
   const view=gltf.bufferViews[image.bufferView],raw=binary.subarray(view.byteOffset??0,(view.byteOffset??0)+view.byteLength);
   const png=sharp(raw),meta=await png.metadata();
   // Keep alpha-bearing leaves as PNG; pack opaque colour and data maps as high-quality JPEG.
   if(meta.hasAlpha)continue;
-  const compressed=await png.jpeg({quality:file==='electric_stove.glb'?74:88,chromaSubsampling:'4:4:4'}).toBuffer();
+  const compressed=await png.jpeg({quality:['electric_stove.glb','modern_wooden_cabinet.glb'].includes(file)?74:88,chromaSubsampling:'4:4:4'}).toBuffer();
   if(compressed.length<raw.length){replacements.set(image.bufferView,compressed);image.mimeType='image/jpeg'}
  }
  let offset=0;const parts=[];
@@ -33,7 +34,7 @@ for(const model of stats)model.bytes=(await readFile(directory+'/'+model.id+'.gl
 await writeFile(directory+'/models.json',JSON.stringify(stats,null,2)+'\n');
 
 const credits=JSON.parse(await readFile(directory+'/credits.json','utf8'));
-for(const asset of credits.filter(a=>a.type==='texture'))for(const map of ['color','normal','roughness']){
+for(const asset of credits.filter(a=>a.type==='texture'&&!selected.size))for(const map of ['color','normal','roughness']){
  const raw=await readFile(`.asset-cache/polyhaven/${asset.id}/${map}.jpg`);
  const packed=await sharp(raw).jpeg({quality:88,chromaSubsampling:'4:4:4'}).toBuffer();
  await writeFile(`${directory}/${asset.id}/${map}.jpg`,packed.length<raw.length?packed:raw);

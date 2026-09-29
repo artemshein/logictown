@@ -1,7 +1,7 @@
 import {mkdir,writeFile,readFile,cp} from 'node:fs/promises';
 import path from 'node:path';
 const root=path.resolve('.asset-cache/polyhaven');
-const models=['vintage_day_bed','sofa_03','modern_arm_chair_01','painted_wooden_table','WoodenTable_01','wooden_stool_02','painted_wooden_chair_02','painted_wooden_cabinet_02','wooden_bookshelf_worn','wicker_basket_01','potted_plant_01','desk_lamp_arm_01','electric_stove','painted_wooden_cabinet','pot_enamel_01','wooden_cutting_board'];
+const models=['vintage_day_bed','sofa_03','modern_arm_chair_01','painted_wooden_table','WoodenTable_01','wooden_stool_02','painted_wooden_chair_02','painted_wooden_cabinet_02','wooden_bookshelf_worn','wicker_basket_01','potted_plant_01','desk_lamp_arm_01','electric_stove','painted_wooden_cabinet','pot_enamel_01','wooden_cutting_board','wooden_display_shelves_01','modern_coffee_table_01'];
 const textures=['white_plaster_02','wooden_floor_01','wood_table','quatrefoil_jacquard_fabric','long_white_tiles','interior_tiles','beige_wall_002'];
 async function get(url){const r=await fetch(url,{headers:{'User-Agent':'LogicTownAssetPreparation/1.0'}});if(!r.ok)throw Error(`${r.status} ${url}`);return r}
 async function save(file,url){try{await readFile(file);return}catch{}await mkdir(path.dirname(file),{recursive:true});await writeFile(file,new Uint8Array(await (await get(url)).arrayBuffer()))}
