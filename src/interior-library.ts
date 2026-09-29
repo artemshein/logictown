@@ -23,7 +23,7 @@ const furniture:Furniture[]=[
  {room:'kitchen',asset:'painted_wooden_table',p:[-.15,.06,-.5],size:[2,.94,1.4],hide:/^kitchen (dining table|table legs)/},
  ...[-1.4,1.1].map(x=>({room:'kitchen' as const,asset:'painted_wooden_chair_02',p:[x,.06,-.5] as [number,number,number],size:[.54,1.15,.56] as [number,number,number],angle:x<0?-Math.PI/2:Math.PI/2,hide:/^kitchen chair /,filter:(m:AbstractMesh)=>Math.abs(m.position.x-x)<.3})),
  {room:'bathroom',asset:'painted_wooden_cabinet_02',p:[2.3,.06,.1],size:[.85,1.28,.6],angle:Math.PI,hide:/^bathroom towel stand$/},
- {room:'hall',asset:'wooden_stool_02',p:[3,.06,-.4],size:[1.03,.58,1.9],angle:Math.PI/2,hide:/^hall (hall bench|bench legs|bench cushion)/},
+ {room:'hall',asset:'wooden_stool_02',p:[3,.06,-1.15],size:[1.9,.58,.75],angle:0,hide:/^hall (hall bench|bench legs|bench cushion)/},
 ];
 
 export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:Map<RoomId,HouseRoom>){

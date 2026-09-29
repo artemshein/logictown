@@ -96,8 +96,8 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
   rug(.5,-.65,1.15,1.4);hotspot('Полка с растением','❀',[-1.3,2.75,2.4],[-.4,1.35],'Даже в самой маленькой комнате у бабушки растёт цветок.');
  }
  if(id==='hall'){
-  rug(.05,0,20,2.4);box('hall bench',3,.56,-.4,1.1,.14,2,oak);for(const x of [2.6,3.4])for(const z of [-1.2,.4])box('bench legs',x,.28,z,.07,.5,.07,wood);
-  box('bench cushion',3,.7,-.4,1.03,.16,1.9,rose);for(let i=0;i<3;i++)ball('shoe',2.8+i*.2,.17,-.8,.15,.16,.34,i%2?sage:wood);
+  rug(.05,0,20,2.4);box('hall bench',3,.56,-1.15,1.9,.14,.75,oak);for(const x of [2.2,3.8])for(const z of [-1.42,-.88])box('bench legs',x,.28,z,.07,.5,.07,wood);
+  box('bench cushion',3,.7,-1.15,1.8,.16,.7,rose);for(let i=0;i<3;i++)ball('shoe',2.8+i*.2,.17,-1.15,.15,.16,.34,i%2?sage:wood);
   mirror(1.3,2.3,3.28,.55,.7);plant(3.2,.08,1.45,1);
   hotspot('Скамейка в прихожей','⌂',[3,1.18,-.5],[1.8,-.6],'Тут удобно переобуваться. Все комнаты дома уже открыты для исследования.');
  }
