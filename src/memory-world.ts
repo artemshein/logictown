@@ -1,4 +1,4 @@
-import {MeshBuilder,StandardMaterial,Texture,Color3,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
+import {MeshBuilder,StandardMaterial,Color3,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import type {HouseRoom} from './house';
 import type {RoomId} from './house-data';
 import type {createMemoryQuest} from './memory';
@@ -35,20 +35,21 @@ export function installMemoryObjects(scene:Scene,shadow:ShadowGenerator,rooms:Ma
  // The only closed door is the exterior door; room passages stay open.
  for(const z of [-.88,.88])box('hall','exit jamb',11.95,1.4,z,.18,2.8,.14,paper);
  box('hall','exit lintel',11.95,2.8,0,.18,.14,1.9,paper);
- const hinge=new TransformNode('exit hinge',scene);hinge.parent=rooms.get('hall')!.root;hinge.position.set(11.82,0,.78);
- const door=box('hall','front door',0,1.3,-.76,.12,2.6,1.52,sage);door.parent=hinge;
- const doorWood=material('entrance oak','#b99872');
- doorWood.diffuseTexture=new Texture('/assets/polyhaven/wood_table/color.jpg',scene);
- doorWood.bumpTexture=new Texture('/assets/polyhaven/wood_table/normal.jpg',scene);doorWood.bumpTexture.level=.18;
- doorWood.specularColor=new Color3(.12,.1,.07);door.material=doorWood;
+ box('hall','exit threshold',11.95,.045,0,.4,.08,1.92,paper);
+ const hinge=new TransformNode('exit hinge',scene);hinge.parent=rooms.get('hall')!.root;hinge.position.set(11.95,0,.84);
+ const door=box('hall','front door',0,1.365,-.84,.12,2.73,1.68,sage);door.parent=hinge;
+ const doorWood=material('entrance sage paint','#769183');
+ doorWood.specularColor=new Color3(.09,.12,.1);door.material=doorWood;
+ const doorPanel=material('entrance inset panel','#8fa99a');
  // Both faces and their mouldings move with the hinge; the slab remains the camera collider.
  for(const side of [-1,1])for(const [y,h] of [[.62,.78],[1.78,1.04]]){
-  const panel=box('hall','door recessed panel',side*.067,y,-.76,.025,h,1.14,doorWood);panel.parent=hinge;
-  for(const z of [-1.35,-.17]){const trim=box('hall','door panel stile',side*.09,y,z,.035,h+.1,.055,doorWood);trim.parent=hinge}
-  for(const yy of [y-h/2-.025,y+h/2+.025]){const trim=box('hall','door panel rail',side*.09,yy,-.76,.035,.055,1.23,doorWood);trim.parent=hinge}
+  const panel=box('hall','door recessed panel',side*.067,y,-.84,.025,h,1.3,doorPanel);panel.parent=hinge;
+  for(const z of [-1.51,-.17]){const trim=box('hall','door panel stile',side*.09,y,z,.035,h+.1,.055,doorWood);trim.parent=hinge}
+  for(const yy of [y-h/2-.025,y+h/2+.025]){const trim=box('hall','door panel rail',side*.09,yy,-.84,.035,.055,1.38,doorWood);trim.parent=hinge}
  }
  for(const y of [.3,1.3,2.3]){const knuckle=box('hall','door brass hinge',-.085,y,-.035,.08,.18,.06,gold);knuckle.parent=hinge}
- const handle=box('hall','front door handle',-.09,1.25,-1.3,.08,.08,.18,gold);handle.parent=hinge;
+ const handle=box('hall','front door handle',-.11,1.25,-1.4,.08,.08,.18,gold);handle.parent=hinge;
+ const outsideHandle=box('hall','front door outside handle',.11,1.25,-1.4,.08,.08,.18,gold);outsideHandle.parent=hinge;
  pin('hall','Входная дверь','⌂',[11.8,2.9,0],[10.8,0],quest.door);
  const lawn=MeshBuilder.CreateBox('garden lawn',{width:7,height:.15,depth:7},scene);lawn.position.set(23.5,-.12,-5.1);lawn.material=material('garden lawn green','#a9b38b');
  const path=MeshBuilder.CreateBox('garden stone path',{width:6,height:.06,depth:1.7},scene);path.position.set(22.8,.01,-5.1);path.material=paper;

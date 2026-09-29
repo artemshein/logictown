@@ -23,7 +23,7 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
  function faucet(x:number,y:number,z:number){tube('curved tap',[[x,y,z],[x,y+.3,z],[x,y+.43,z-.1],[x,y+.34,z-.24]],.027,brass);ball('tap handle',x+.11,y+.12,z,.1,.07,.07,brass)}
  function sink(x:number,y:number,z:number){box('sink cabinet',x,y/2,z,1.3,y,.8,sage);box('stone counter',x,y,z,1.43,.1,.91,cream);ball('porcelain basin',x,y+.10,z-.02,.92,.22,.63,white);ball('basin inset',x,y+.18,z-.03,.72,.06,.44,blue);faucet(x,y+.1,z+.29);box('cabinet pull',x,y*.62,z-.425,.28,.035,.035,brass)}
  function mirror(x:number,y:number,z:number,w=.9,h=1.1){box('mirror surround',x,y,z,w+.1,h+.1,.06,brass);const glass=mat('mirror glass','#b8cfcd',true);box('mirror',x,y,z-.04,w,h,.018,glass);box('mirror highlight',x-w*.2,y,z-.054,.025,h*.8,.006,white)}
- function window(x:number,y:number,z:number){box('window frame',x,y,z,1.75,1.7,.1,cream);box('daylight',x,y,z-.07,1.55,1.5,.025,blue);box('window mullion',x,y,z-.1,.06,1.52,.08,cream);box('window mullion',x,y,z-.1,1.54,.06,.08,cream);box('window sill',x,y-.87,z-.12,1.95,.12,.35,oak);plant(x+.47,y-.81,z-.13,.45)}
+ function window(x:number,y:number,z:number){box('window frame',x,y,z,1.75,1.7,.1,cream);box('daylight',x,y,z-.07,1.55,1.5,.025,existing('window sky')??blue);box('window mullion',x,y,z-.1,.06,1.52,.08,cream);box('window mullion',x,y,z-.1,1.54,.06,.08,cream);box('window sill',x,y-.87,z-.12,1.95,.12,.35,oak);plant(x+.47,y-.81,z-.13,.45)}
  const w=cfg.width,d=cfg.depth;
  box('foundation',0,-.23,0,w+.3,.44,d+.3,cream);
  const floor=box('walkable floor',0,0,0,w,.08,d,oak);
@@ -50,6 +50,10 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
  box('cutaway right wall',w/2-.06,1.8,0,.12,3.6,d,wallMat);
  if(south)box('solid wall south',0,1.8,-d/2,w,3.6,.12,wallMat);
  box('solid wall lintel',gap,3.2,edge,2,.8,.12,wallMat);
+ const jamb=mat('doorway painted wood','#e9dfc9');
+ for(const x of [gap-.98,gap+.98])box('passage jamb',x,1.4,edge,.09,2.8,.24,jamb);
+ box('passage head',gap,2.8,edge,2.03,.1,.24,jamb);
+ box('passage threshold',gap,.055,edge,1.95,.025,.24,oak);
  }
  if(id==='living'){
   rug(-.8,-.1,4.2,3.2);box('sofa base',-1.25,.43,2.15,3.65,.55,1.35,rose);box('sofa back',-1.25,1.1,2.66,3.65,1.05,.3,rose);
@@ -68,11 +72,11 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
   box('oven',-1.68,.62,2.22,.91,.72,.07,dark);box('oven glass',-1.68,.6,2.17,.68,.47,.02,blue);box('oven handle',-1.68,.92,2.13,.68,.035,.06,brass);
   for(const x of [-1.94,-1.42])for(const z of [2.47,2.9]){cyl('burner',x,1.225,z,.32,.024,dark);cyl('burner ring',x,1.243,z,.23,.014,brass)}
   ball('sink bowl',.56,1.22,2.7,.85,.16,.65,white);ball('sink hollow',.56,1.3,2.68,.66,.055,.44,blue);faucet(.56,1.23,3.03);
-  box('refrigerator',-3.22,1.27,1.48,1.14,2.45,1.18,white);box('fridge door',-3.22,1.5,.865,1.04,1.7,.075,cream);box('freezer door',-3.22,.45,.865,1.04,.55,.075,cream);box('fridge handle',-2.84,1.56,.79,.045,.53,.045,brass);
+  box('refrigerator',3.2,1.27,2.7,1.14,2.45,1.18,white);box('fridge door',3.2,1.5,2.085,1.04,1.7,.075,cream);box('freezer door',3.2,.45,2.085,1.04,.55,.075,cream);box('fridge handle',3.58,1.56,2.01,.045,.53,.045,brass);
   window(-.85,2.6,3.28);
   cyl('kettle body',-2.68,1.45,2.66,.36,.4,blue,.28);cyl('kettle lid',-2.68,1.68,2.66,.29,.04,brass);tube('kettle handle',[[-2.85,1.55,2.66],[-2.9,1.9,2.66],[-2.53,1.9,2.66],[-2.5,1.55,2.66]],.025,wood);
   box('dining table',-.15,.93,-.5,2,.14,1.4,oak);for(const x of [-.96,.66])for(const z of [-1.01,.01])box('table legs',x,.45,z,.1,.88,.1,wood);
-  for(const x of [-1.4,1.1]){box('chair seat',x,.5,-.5,.54,.09,.56,sage);box('chair back',x,.95,-.18,.56,.7,.075,sage);for(const dx of [-.2,.2])for(const dz of [-.2,.2])box('chair leg',x+dx,.25,-.5+dz,.05,.46,.05,wood)}
+  for(const x of [-1.4,1.1]){box('chair seat',x,.5,-.5,.54,.09,.56,sage);box('chair back',x+(x<0?-.29:.29),.95,-.5,.075,.7,.56,sage);for(const dx of [-.2,.2])for(const dz of [-.2,.2])box('chair leg',x+dx,.25,-.5+dz,.05,.46,.05,wood)}
   ball('fruit bowl',-.15,1.05,-.5,.66,.17,.5,cream);for(let i=0;i<5;i++)ball('fruit',-.36+i*.1,1.19+Math.sin(i)*.03,-.5+Math.cos(i)*.1,.18,.19,.18,i%2?brass:rose);
   hotspot('Чайник','☕',[-2.68,2,2.66],[-2.2,1.66],'В чайнике ещё тепло. На завтрак сегодня тосты и яблоки.');
  }

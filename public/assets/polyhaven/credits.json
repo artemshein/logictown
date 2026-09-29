@@ -133,6 +133,50 @@
     "type": "model"
   },
   {
+    "id": "electric_stove",
+    "name": "Electric Stove",
+    "authors": {
+      "Kuutti Siitonen": "All"
+    },
+    "source": "https://polyhaven.com/a/electric_stove",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "type": "model"
+  },
+  {
+    "id": "painted_wooden_cabinet",
+    "name": "Painted Wooden Cabinet",
+    "authors": {
+      "Kirill Sannikov": "All"
+    },
+    "source": "https://polyhaven.com/a/painted_wooden_cabinet",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "type": "model"
+  },
+  {
+    "id": "pot_enamel_01",
+    "name": "Pot Enamel 01",
+    "authors": {
+      "Kuutti Siitonen": "All"
+    },
+    "source": "https://polyhaven.com/a/pot_enamel_01",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "type": "model"
+  },
+  {
+    "id": "wooden_cutting_board",
+    "name": "Wooden Cutting Board",
+    "authors": {
+      "Kuutti Siitonen": "All"
+    },
+    "source": "https://polyhaven.com/a/wooden_cutting_board",
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "type": "model"
+  },
+  {
     "id": "white_plaster_02",
     "name": "White Plaster 02",
     "authors": {
@@ -199,6 +243,18 @@
     "source": "https://polyhaven.com/a/interior_tiles",
     "license": "CC0-1.0",
     "resolution": "1k",
+    "type": "texture"
+  },
+  {
+    "id": "beige_wall_002",
+    "name": "Beige Wall 002",
+    "authors": {
+      "Dimitrios Savva": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "source": "https://polyhaven.com/a/beige_wall_002",
+    "license": "CC0-1.0",
+    "resolution": "2k",
     "type": "texture"
   }
 ]

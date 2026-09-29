@@ -137,9 +137,17 @@ upgradeArt(scene,camera,shadow,girl);
 const bedroomRoot=new TransformNode('room-bedroom-original',scene);
 scene.meshes.filter(m=>!m.isDescendantOf(girl)).forEach(m=>{if(!m.parent)m.parent=bedroomRoot});
 scene.transformNodes.filter(n=>n!==girl&&n!==bedroomRoot&&!n.parent).forEach(n=>n.parent=bedroomRoot);
+const bedroomCeiling=mat('bedroom ceiling ivory','#e5dfd1');bedroomCeiling.backFaceCulling=false;
+box('bedroom ceiling',0,3.98,0,8.12,.16,6.92,bedroomCeiling,bedroomRoot);
+for(const z of [-3.28,3.28])box('bedroom ceiling cornice',0,3.8,z,8,.14,.18,cream,bedroomRoot);
+for(const x of [-3.88,3.88])box('bedroom ceiling cornice',x,3.8,0,.18,.14,6.8,cream,bedroomRoot);
 for(const [lo,hi] of [[-4,.5],[2.5,4]])box('bedroom open passage',(lo+hi)/2,1.95,-3.4,hi-lo,3.9,.12,wall,bedroomRoot);
 box('solid wall bedroom right',3.94,1.95,0,.12,3.9,6.8,wall,bedroomRoot);
 box('solid wall bedroom lintel',1.5,3.35,-3.4,2,1.1,.12,wall,bedroomRoot);
+const bedroomJamb=mat('bedroom doorway ivory','#e9dfc9');
+for(const x of [.52,2.48])box('bedroom passage jamb',x,1.4,-3.4,.09,2.8,.24,bedroomJamb,bedroomRoot);
+box('bedroom passage head',1.5,2.8,-3.4,2.03,.1,.24,bedroomJamb,bedroomRoot);
+box('bedroom passage threshold',1.5,.055,-3.4,1.95,.025,.24,lightwood,bedroomRoot);
 const houseRooms=new Map<RoomId,HouseRoom>([['bedroom',{root:bedroomRoot,floor,hotspots:[]}]]);
 let currentRoom:RoomId='bedroom';
 for(const id of Object.keys(layout) as RoomId[]){if(id!=='bedroom')houseRooms.set(id,buildHouseRoom(scene,shadow,id));const r=houseRooms.get(id)!;r.root.position.set(layout[id][0],0,layout[id][1]);}

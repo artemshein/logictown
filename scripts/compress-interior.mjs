@@ -6,12 +6,12 @@ for(const file of (await readdir(directory)).filter(f=>f.endsWith('.glb'))){
  const gltf=JSON.parse(data.subarray(20,20+jsonLength).toString()),binary=data.subarray(28+jsonLength);
  const replacements=new Map();
  for(const image of gltf.images??[]){
-  if(image.mimeType==='image/jpeg')continue;
+  if(image.mimeType==='image/jpeg'&&file!=='electric_stove.glb')continue;
   const view=gltf.bufferViews[image.bufferView],raw=binary.subarray(view.byteOffset??0,(view.byteOffset??0)+view.byteLength);
   const png=sharp(raw),meta=await png.metadata();
   // Keep alpha-bearing leaves as PNG; pack opaque colour and data maps as high-quality JPEG.
   if(meta.hasAlpha)continue;
-  const compressed=await png.jpeg({quality:88,chromaSubsampling:'4:4:4'}).toBuffer();
+  const compressed=await png.jpeg({quality:file==='electric_stove.glb'?74:88,chromaSubsampling:'4:4:4'}).toBuffer();
   if(compressed.length<raw.length){replacements.set(image.bufferView,compressed);image.mimeType='image/jpeg'}
  }
  let offset=0;const parts=[];

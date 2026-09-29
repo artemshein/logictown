@@ -4,7 +4,7 @@ import type {RoomId} from './house-data';
 // One repeat spans 2 metres horizontally and the full 4-metre wall height.
 // The lower finish therefore stays at the same height across separate wall segments.
 export function addWallSurface(scene:Scene,id:RoomId,material:StandardMaterial,palette?:string[]){
- const width=512,height=1024,px=256;
+ const width=1024,height=2048,px=512;
  const base=material.diffuseTexture as DynamicTexture;
  const texture=new DynamicTexture(id+' complete wall finish',{width,height},scene,true);
  const c=texture.getContext() as unknown as CanvasRenderingContext2D;
@@ -33,8 +33,21 @@ export function addWallSurface(scene:Scene,id:RoomId,material:StandardMaterial,p
  c.fillStyle=palette?'#e8e1d2':'#e3dfca';c.fillRect(0,top-7,width,12);c.fillRect(0,height-25,width,25);
  c.fillStyle='#ffffff66';c.fillRect(0,top-7,width,2);c.fillStyle='#5a604238';c.fillRect(0,top+5,width,3);
  for(let i=0;i<55000;i++){c.fillStyle=random()>.5?'#ffffff0c':'#403c2a0c';c.fillRect(random()*width,random()*height,1,1)}
+ if(id!=='bedroom'){
+  const image=new Image();
+  image.onload=()=>{
+   c.filter='brightness(1.55) contrast(1.15)';
+   c.drawImage(image,0,0,image.width,image.height,0,0,width,top-7);
+   c.filter='none';
+   c.fillStyle=id==='bathroom'?'#cbded388':id==='kitchen'?'#eee7d466':id==='living'?'#e5dfca66':id==='toilet'?'#e8dfcb70':'#e8ddc766';
+   c.fillRect(0,0,width,top-7);
+   texture.update();
+  };
+  image.src='/assets/polyhaven/beige_wall_002/color.jpg';
+ }
  texture.update();texture.wrapU=Texture.WRAP_ADDRESSMODE;texture.wrapV=Texture.CLAMP_ADDRESSMODE;texture.anisotropicFilteringLevel=4;
  material.diffuseTexture=texture;material.backFaceCulling=false;
+ if(id!=='bedroom')material.emissiveColor=new Color3(.12,.105,.085);
 
  // A small tangent-space normal map adds plaster grain and recessed grout in the light.
  const nw=128,nh=256,normal=new DynamicTexture(id+' wall relief',{width:nw,height:nh},scene,true);

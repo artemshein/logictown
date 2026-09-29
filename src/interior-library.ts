@@ -7,7 +7,11 @@ import {installCarpets} from './carpets';
 
 type Furniture={room:RoomId;asset:string;p:[number,number,number];size:[number,number,number];angle?:number;hide:RegExp;filter?:(m:AbstractMesh)=>boolean};
 const furniture:Furniture[]=[
- {room:'kitchen',asset:'../fixtures/fridge',p:[-3.22,.06,1.48],size:[1.14,2.45,1.18],angle:Math.PI,hide:/^kitchen (refrigerator|fridge |freezer )/},
+ {room:'kitchen',asset:'../fixtures/fridge',p:[3.2,.06,2.7],size:[1.14,2.45,1.18],angle:Math.PI,hide:/^kitchen (refrigerator|fridge |freezer )/},
+ {room:'kitchen',asset:'electric_stove',p:[-1.68,.06,2.7],size:[1.04,1.16,1.03],angle:Math.PI,hide:/^kitchen (lower cabinet|cabinet front|brass pull|countertop|oven|burner)/,filter:m=>Math.abs(m.position.x+1.68)<.52},
+ {room:'kitchen',asset:'painted_wooden_cabinet',p:[-3.2,.06,1.45],size:[1.05,1.15,1.05],angle:Math.PI/2,hide:/^kitchen unused cabinet$/},
+ {room:'kitchen',asset:'pot_enamel_01',p:[-1.68,1.18,2.7],size:[.35,.25,.35],hide:/^kitchen unused pot$/},
+ {room:'kitchen',asset:'wooden_cutting_board',p:[-2.8,1.22,2.7],size:[.42,.035,.32],hide:/^kitchen unused board$/},
  {room:'bathroom',asset:'../fixtures/bathtub',p:[-2,.06,1.05],size:[1.65,1,3.22],angle:Math.PI/2,hide:/^bathroom bath (bottom|side|end|water)$/},
  {room:'toilet',asset:'../fixtures/toilet',p:[-1.35,.06,1.5],size:[.8,1.4,1.45],angle:Math.PI,hide:/^(toilet (toilet cistern|cistern lid|flush button|toilet pedestal|toilet bowl|toilet inset)|toilet seat)$/},
  {room:'bedroom',asset:'vintage_day_bed',p:[-2.72,.08,1.43],size:[1.75,1.55,3],angle:Math.PI/2,hide:/^(bed |headboard|mattress|pillow|soft draped quilt|turned bedpost|teddy)/},
@@ -21,7 +25,7 @@ const furniture:Furniture[]=[
  {room:'living',asset:'WoodenTable_01',p:[-1,.06,-.15],size:[1.95,.65,1.15],hide:/^living coffee table/},
  {room:'living',asset:'wooden_bookshelf_worn',p:[-3.4,.06,-1.4],size:[.7,1.9,2.1],angle:Math.PI/2,hide:/^living (bookcase |bookshelf|book$)/},
  {room:'kitchen',asset:'painted_wooden_table',p:[-.15,.06,-.5],size:[2,.94,1.4],hide:/^kitchen (dining table|table legs)/},
- ...[-1.4,1.1].map(x=>({room:'kitchen' as const,asset:'painted_wooden_chair_02',p:[x,.06,-.5] as [number,number,number],size:[.54,1.15,.56] as [number,number,number],angle:x<0?-Math.PI/2:Math.PI/2,hide:/^kitchen chair /,filter:(m:AbstractMesh)=>Math.abs(m.position.x-x)<.3})),
+ ...[-1.4,1.1].map(x=>({room:'kitchen' as const,asset:'painted_wooden_chair_02',p:[x,.06,-.5] as [number,number,number],size:[.56,1.15,.54] as [number,number,number],angle:x<0?Math.PI/2:-Math.PI/2,hide:/^kitchen chair /,filter:(m:AbstractMesh)=>Math.abs(m.position.x-x)<.3})),
  {room:'bathroom',asset:'painted_wooden_cabinet_02',p:[2.3,.06,.1],size:[.85,1.28,.6],angle:Math.PI,hide:/^bathroom towel stand$/},
  {room:'hall',asset:'wooden_stool_02',p:[3,.06,-1.15],size:[1.9,.58,.75],angle:0,hide:/^hall (hall bench|bench legs|bench cushion)/},
 ];
