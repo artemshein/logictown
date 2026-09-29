@@ -227,7 +227,7 @@ if(memoryCheck)initialRoom='hall';
 if(interiorCheck){const id=new URLSearchParams(location.search).get('room');initialRoom=id&&id in roomInfo?id as RoomId:'bedroom'}
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
-girl.rotation.y=0;camera.alpha=-Math.PI/2;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
+girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
 let time=0;
 engine.runRenderLoop(()=>{viewport.update();const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const input=controls.read($('.overlay').hidden&&!leavingHouse);
  const manual=(input.forward!==0||input.turn!==0)&&!leavingHouse;

@@ -1,4 +1,4 @@
-import {MeshBuilder,StandardMaterial,Color3,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
+import {MeshBuilder,StandardMaterial,Texture,Color3,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import type {HouseRoom} from './house';
 import type {RoomId} from './house-data';
 import type {createMemoryQuest} from './memory';
@@ -37,6 +37,17 @@ export function installMemoryObjects(scene:Scene,shadow:ShadowGenerator,rooms:Ma
  box('hall','exit lintel',11.95,2.8,0,.18,.14,1.9,paper);
  const hinge=new TransformNode('exit hinge',scene);hinge.parent=rooms.get('hall')!.root;hinge.position.set(11.82,0,.78);
  const door=box('hall','front door',0,1.3,-.76,.12,2.6,1.52,sage);door.parent=hinge;
+ const doorWood=material('entrance oak','#b99872');
+ doorWood.diffuseTexture=new Texture('/assets/polyhaven/wood_table/color.jpg',scene);
+ doorWood.bumpTexture=new Texture('/assets/polyhaven/wood_table/normal.jpg',scene);doorWood.bumpTexture.level=.18;
+ doorWood.specularColor=new Color3(.12,.1,.07);door.material=doorWood;
+ // Both faces and their mouldings move with the hinge; the slab remains the camera collider.
+ for(const side of [-1,1])for(const [y,h] of [[.62,.78],[1.78,1.04]]){
+  const panel=box('hall','door recessed panel',side*.067,y,-.76,.025,h,1.14,doorWood);panel.parent=hinge;
+  for(const z of [-1.35,-.17]){const trim=box('hall','door panel stile',side*.09,y,z,.035,h+.1,.055,doorWood);trim.parent=hinge}
+  for(const yy of [y-h/2-.025,y+h/2+.025]){const trim=box('hall','door panel rail',side*.09,yy,-.76,.035,.055,1.23,doorWood);trim.parent=hinge}
+ }
+ for(const y of [.3,1.3,2.3]){const knuckle=box('hall','door brass hinge',-.085,y,-.035,.08,.18,.06,gold);knuckle.parent=hinge}
  const handle=box('hall','front door handle',-.09,1.25,-1.3,.08,.08,.18,gold);handle.parent=hinge;
  pin('hall','Входная дверь','⌂',[11.8,2.9,0],[10.8,0],quest.door);
  const lawn=MeshBuilder.CreateBox('garden lawn',{width:7,height:.15,depth:7},scene);lawn.position.set(23.5,-.12,-5.1);lawn.material=material('garden lawn green','#a9b38b');

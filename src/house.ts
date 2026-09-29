@@ -27,6 +27,11 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
  const w=cfg.width,d=cfg.depth;
  box('foundation',0,-.23,0,w+.3,.44,d+.3,cream);
  const floor=box('walkable floor',0,0,0,w,.08,d,oak);
+ const ceilingMat=mat('ceiling ivory','#e5dfd1');
+ ceilingMat.backFaceCulling=false;
+ box('ceiling',0,3.68,0,w+.12,.16,d+.12,ceilingMat);
+ for(const z of [-d/2+.12,d/2-.12])box('ceiling cornice',0,3.5,z,w,.14,.18,cream);
+ for(const x of [-w/2+.12,w/2-.12])box('ceiling cornice',x,3.5,0,.18,.14,d,cream);
  const wallMat=mat('plaster',id==='living'?'#c5bba6':id==='kitchen'?'#ded6b6':id==='bathroom'?'#becfd0':id==='toilet'?'#b7c4ae':'#d4c7b0');
  if(id!=='bedroom'){
  if(id!=='bathroom'&&id!=='toilet'&&id!=='hall')box('back wall',0,1.8,d/2,w+.1,3.6,.12,wallMat);box('left wall',-w/2+.06,1.8,0,.12,3.6,d,wallMat);
