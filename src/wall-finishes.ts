@@ -2,6 +2,8 @@ import {addWallSurface} from './wall-surface';
 import {Color3,DynamicTexture,StandardMaterial,Texture,VertexBuffer,type Scene,type Mesh} from '@babylonjs/core';
 import type {HouseRoom} from './house';
 import type {RoomId} from './house-data';
+import {layout,roomAt} from './layout';
+import {applyWallSides} from './wall-sides';
 
 // Tileable, locally painted finishes. UVs use metres so adjoining walls keep the same scale.
 export function applyWallFinishes(scene:Scene,rooms:Map<RoomId,HouseRoom>){
@@ -43,13 +45,23 @@ export function applyWallFinishes(scene:Scene,rooms:Map<RoomId,HouseRoom>){
  const plaster:Record<RoomId,StandardMaterial>={bedroom:paper,living:painted('living woven stripe wallpaper','#d3ccb3','stripe'),kitchen:painted('kitchen oat plaster','#d8ceba','plaster'),bathroom:painted('bathroom chalk plaster','#c5d0c8','plaster'),toilet:painted('toilet linen plaster','#d4ccb5','plaster'),hall:painted('hall sand plaster','#d4c6ae','plaster')};
  const tilePalette:Partial<Record<RoomId,string[]>>={kitchen:['#dce1cd','#d4dbc6','#e0e2d1','#d8deca'],bathroom:['#92b5ae','#a0bfb5','#aac5bb','#9cbbb4'],toilet:['#d2be9e','#dccbad','#d6c3a5','#dfcfb4']};
  for(const id of Object.keys(plaster) as RoomId[])addWallSurface(scene,id,plaster[id],tilePalette[id]);
+ const facade=new StandardMaterial('exterior warm lime render',scene);
+ const facadeTexture=new Texture('/assets/polyhaven/beige_wall_002/color.jpg',scene);
+ facadeTexture.vScale=2;facadeTexture.anisotropicFilteringLevel=8;facade.diffuseTexture=facadeTexture;
+ facade.diffuseColor=Color3.FromHexString('#ddc4a5');facade.emissiveColor=new Color3(.16,.13,.1);facade.specularColor=new Color3(.02,.02,.02);
+ const reveal=new StandardMaterial('wall opening ivory',scene);reveal.diffuseColor=Color3.FromHexString('#e9dfc9');reveal.specularColor=new Color3(.03,.03,.03);
  const tiles=new Map<RoomId,StandardMaterial[]>();for(const id of ['kitchen','bathroom','toilet'] as RoomId[])tiles.set(id,tilePalette[id]!.map((color,i)=>painted(id+' handmade glaze '+i,color,'ceramic')));
  function worldUV(mesh:Mesh){const p=mesh.getVerticesData(VertexBuffer.PositionKind),normals=mesh.getVerticesData(VertexBuffer.NormalKind);if(!p||!normals)return;const uv:number[]=[];for(let i=0;i<p.length;i+=3){const x=p[i]+mesh.position.x,y=p[i+1]+mesh.position.y,z=p[i+2]+mesh.position.z;uv.push((Math.abs(normals[i])>Math.abs(normals[i+2])?z:x)/2,y/4)}mesh.setVerticesData(VertexBuffer.UVKind,uv)}
  for(const [id,room] of rooms){let tileIndex=0;for(const abstract of room.root.getChildMeshes()){
    const mesh=abstract as Mesh,name=mesh.name;
    if(name.includes('glazed wall tile')){mesh.material=tiles.get(id)![tileIndex++%4];continue}
    if(name.includes('solid wall')||name==='back wall'||name==='left wall'||name==='bedroom open passage'||name===id+' back wall'||name===id+' left wall'||name===id+' open passage wall'||name===id+' cutaway right wall'){
-    mesh.material=plaster[id];worldUV(mesh);
+    worldUV(mesh);
+    const bounds=mesh.getBoundingInfo().boundingBox,extent=bounds.maximum.subtract(bounds.minimum),axis=extent.x<extent.z?'x':'z';
+    const outward=mesh.position[axis]<0?-1:1;
+    const x=layout[id][0]+mesh.position.x+(axis==='x'?outward*.3:0),z=layout[id][1]+mesh.position.z+(axis==='z'?outward*.3:0);
+    const neighbor=roomAt(x,z);
+    applyWallSides(mesh,plaster[id],neighbor&&neighbor!==id?plaster[neighbor]:facade,reveal);
    }
   }
  }
