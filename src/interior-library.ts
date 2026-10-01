@@ -21,13 +21,11 @@ const furniture:Furniture[]=[
  {room:'bedroom',asset:'wicker_basket_01',p:[-3.15,.06,-2.27],size:[.84,.58,.72],hide:/^(floor basket|basket seam|basket blanket)$/},
  {room:'bedroom',asset:'desk_lamp_arm_01',p:[-.57,1.20,2.36],size:[.32,.68,.42],hide:/^lamp /},
  {room:'living',asset:'sofa_03',p:[-1.25,.06,2.2],size:[3.65,1.55,1.4],angle:Math.PI,hide:/^living (sofa |seat cushion|soft pillow)/},
- {room:'living',asset:'modern_arm_chair_01',p:[2.55,.06,-.9],size:[1.2,1.5,1.1],angle:Math.PI,hide:/^living armchair/},
+ {room:'living',asset:'modern_arm_chair_01',p:[2.55,.06,-.9],size:[1.2,1.5,1.1],angle:-Math.PI/2,hide:/^living armchair/},
  {room:'living',asset:'modern_coffee_table_01',p:[-1,.06,-.15],size:[1.95,.65,1.15],hide:/^living coffee table/},
  {room:'living',asset:'wooden_display_shelves_01',p:[-3.4,.06,-1.4],size:[.7,1.9,2.1],angle:0,hide:/^living (bookcase |bookshelf|book$)/},
  {room:'kitchen',asset:'painted_wooden_table',p:[-.15,.06,-.5],size:[2,.94,1.4],finish:'#c8af89',hide:/^kitchen (dining table|table legs)/},
  ...[-1.4,1.1].map(x=>({room:'kitchen' as const,asset:'painted_wooden_chair_02',p:[x,.06,-.5] as [number,number,number],size:[.56,1.15,.54] as [number,number,number],angle:x<0?Math.PI/2:-Math.PI/2,finish:'#a6b8aa',hide:/^kitchen chair /,filter:(m:AbstractMesh)=>Math.abs(m.position.x-x)<.3})),
- {room:'bathroom',asset:'painted_wooden_cabinet_02',p:[2.3,.06,.1],size:[.85,1.28,.6],angle:Math.PI,finish:'#c1d2c5',hide:/^bathroom towel stand$/},
- {room:'hall',asset:'wooden_stool_02',p:[3,.06,-1.15],size:[1.9,.58,.75],angle:0,finish:'#ae8454',hide:/^hall (hall bench|bench legs|bench cushion)/},
 ];
 
 export function installInteriorLibrary(scene:Scene,shadow:ShadowGenerator,rooms:Map<RoomId,HouseRoom>){

@@ -23,7 +23,7 @@ export function installMemoryObjects(scene:Scene,shadow:ShadowGenerator,rooms:Ma
  const keyShaft=box('hall','brass key shaft',-2.03,.5,-.94,.25,.03,.035,gold);
  const keyTooth=box('hall','brass key tooth',-1.94,.5,-.91,.035,.03,.09,gold);
  box('toilet','mirror puzzle box',-.7,2.4,2.6,.5,.2,.25,sage);
- const fragments:[RoomId,number,number,number,number,number,number][]=[['bedroom',0,-3.15,.75,-2.27,-2,-2.5],['kitchen',1,-2.6,1.27,2.3,-2.2,1.66],['bathroom',2,2.3,1.76,.1,1.4,-.8]];
+ const fragments:[RoomId,number,number,number,number,number,number][]=[['bedroom',0,-2.56,.789,-.88,-1.9,-.85],['kitchen',1,-2.6,1.27,2.3,-2.2,1.66],['bathroom',2,2.8,1.679,-.15,1.4,-.8]];
  for(const [id,i,x,y,z,ax,az] of fragments){box(id,'photo fragment '+i,x,y,z,.32,.018,.24,paper);pin(id,'Фрагмент фотографии '+(i+1),'▧',[x,y+.35,z],[ax,az],()=>quest.fragment(i))}
  pin('bedroom','Записка бабушки','✎',[-.05,1.9,2.05],[-.65,.8],quest.intro);
  pin('bedroom','Театр теней','☾',[2.73,2.3,2.54],[2.63,1.56],quest.bedroom);

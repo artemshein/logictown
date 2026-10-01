@@ -85,8 +85,8 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
   box('bath bottom',-2,.35,1.05,1.47,.45,3.18,white);for(const x of [-2.7,-1.3])box('bath side',x,.68,1.05,.16,.65,3.22,white);for(const z of [-.51,2.61])box('bath end',-2,.68,z,1.44,.65,.17,white);
   box('bath water',-2,.79,1.05,1.22,.025,2.87,water);faucet(-2,1,2.53);const stream=cyl('running water',-2,.97,2.29,.035,.34,water);stream.setEnabled(false);
   const hull=ball('toy boat',-2.1,.85,.55,.35,.12,.19,oak);tube('boat mast',[[-2.1,.88,.55],[-2.1,1.14,.55]],.012,wood);const sail=MeshBuilder.CreateDisc('toy sail',{radius:.12,tessellation:3},scene);finish(sail,cream);sail.position.set(-2.02,1.04,.55);
-  sink(-.05,1.06,2.85);mirror(-.05,2.08,3.28);box('towel stand',2.3,.7,.1,.85,1.25,.6,oak);for(let i=0;i<3;i++)box('folded towels',2.3,1.39+i*.11,.1,.7,.1,.45,i%2?rose:cloth);
-  rug(.1,-1.55,1.9,1.15,existing('rug sage'));frame(1.7,2.65,3.27,.52,.55);
+  sink(-.05,1.06,2.85);mirror(-.05,2.08,3.28);box('towel stand',2.8,.7075,-.15,.6,1.265,.85,sage);box('towel cabinet door',2.48,.7075,-.15,.035,1.12,.73,sage);box('towel cabinet handle',2.44,1.03,-.15,.04,.04,.2,brass);for(let i=0;i<3;i++)box('folded towels',2.8,1.39+i*.11,-.15,.48,.1,.7,i%2?rose:cloth);
+  rug(.1,-1.55,1.9,1.15,existing('rug sage'));frame(.65,2.65,3.27,.52,.55);
   let running=false;hotspot('Кран в ванной','♧',[-2,1.55,2.2],[-.7,1.9],'Вода журчит, и кораблик готов к путешествию.',()=>{running=!running;stream.setEnabled(running);hull.rotation.y+=.4});
  }
  if(id==='toilet'){
@@ -100,10 +100,10 @@ export function buildHouseRoom(scene:Scene,shadow:ShadowGenerator,id:RoomId):Hou
   rug(.5,-.65,1.15,1.4);hotspot('Полка с растением','❀',[-1.3,2.75,2.4],[-.4,1.35],'Даже в самой маленькой комнате у бабушки растёт цветок.');
  }
  if(id==='hall'){
-  rug(.05,0,20,2.4);box('hall bench',3,.56,-1.15,1.9,.14,.75,oak);for(const x of [2.2,3.8])for(const z of [-1.42,-.88])box('bench legs',x,.28,z,.07,.5,.07,wood);
-  box('bench cushion',3,.7,-1.15,1.8,.16,.7,rose);for(let i=0;i<3;i++)ball('shoe',2.8+i*.2,.17,-1.15,.15,.16,.34,i%2?sage:wood);
+  rug(.05,0,20,2.4);box('hall bench',2.6,.56,-1.15,1.9,.14,.75,oak);for(const x of [1.8,3.4])for(const z of [-1.42,-.88])box('bench legs',x,.28,z,.07,.5,.07,wood);
+  box('bench cushion',2.6,.7,-1.15,1.8,.16,.7,rose);for(let i=0;i<3;i++)ball('shoe',2.4+i*.2,.17,-1.15,.15,.16,.34,i%2?sage:wood);
   mirror(1.3,2.3,3.28,.55,.7);plant(3.2,.08,1.45,1);
-  hotspot('Скамейка в прихожей','⌂',[3,1.18,-.5],[1.8,-.6],'Тут удобно переобуваться. Все комнаты дома уже открыты для исследования.');
+  hotspot('Скамейка в прихожей','⌂',[2.6,1.18,-.5],[1.8,-.6],'Тут удобно переобуваться. Все комнаты дома уже открыты для исследования.');
  }
  if(id==='hall'){
   for(const o of root.getChildMeshes())if(/mirror/.test(o.name))o.setEnabled(false);

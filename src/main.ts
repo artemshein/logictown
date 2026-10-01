@@ -94,7 +94,7 @@ box('desk top',.22,1.13,2.12,2.18,.13,1.04,lightwood);for(const x of [-.69,1.13]
 box('desk drawer',.22,.96,1.67,1.92,.23,.1,wood);sphere('drawer handle',.22,.96,1.6,.09,.07,.06,gold);
 const paper=box('grandma note',-.06,1.211,1.99,.48,.015,.35,white);paper.rotation.y=.18;
 for(let i=0;i<4;i++)box('writing',-.08,1.221,1.91+i*.045,.29-i*.03,.003,.009,green);
-cyl('pencil cup',.91,1.34,2.36,.21,.33,terra);for(let i=0;i<3;i++)rod('pencil',new Vector3(.87+i*.04,1.37,2.36),new Vector3(.85+i*.065,1.69,2.35),.015,i===1?gold:blue);
+cyl('pencil cup',.91,1.36,2.36,.21,.33,terra);for(let i=0;i<3;i++)rod('pencil',new Vector3(.87+i*.04,1.37,2.36),new Vector3(.85+i*.065,1.69,2.35),.015,i===1?gold:blue);
 cyl('lamp base',-.57,1.23,2.36,.34,.08,gold);rod('lamp stem',new Vector3(-.57,1.25,2.36),new Vector3(-.57,1.84,2.36),.035,gold);cyl('lamp shade',-.57,1.87,2.36,.56,.38,cream,.29);
 cyl('stool seat',.25,.66,1.13,.67,.13,wood);for(const x of [-.01,.51])for(const z of [.93,1.34])rod('stool leg',new Vector3(x,.08,z),new Vector3(.25+(x-.25)*.8,.62,1.13+(z-1.13)*.8),.04,darkwood);
 
@@ -103,7 +103,7 @@ box('cabinet back',2.85,.63,2.9,1.72,1.15,.12,wood);for(const x of [2.02,3.68])b
 for(const y of [.13,.64,1.23])box('cabinet shelf',2.85,y,2.61,1.8,.1,.77,lightwood);
 const bookColors=[blue,red,cream,green,gold];for(let i=0;i<8;i++){const h=.3+(i%3)*.06;const b=box('book',2.22+i*.17,.2+h/2,2.5,.12,h,.38,bookColors[i%5]);if(i===6)b.rotation.z=-.15;box('book spine line',2.22+i*.17,.28,2.302,.09,.02,.005,gold)}
 box('linen basket',3.13,.88,2.56,.71,.36,.51,cream);for(let i=0;i<5;i++)box('basket weave',3.13,.73+i*.065,2.299,.69,.012,.006,wood);
-const musicbox=new TransformNode('music box',scene);musicbox.position.set(2.73,1.29,2.54);
+const musicbox=new TransformNode('music box',scene);musicbox.position.set(2.73,1.26,2.54);
 box('box base',0,.16,0,.77,.31,.53,blue,musicbox);box('box gold stripe',0,.23,-.27,.76,.035,.014,gold,musicbox);sphere('box latch',0,.14,-.29,.08,.1,.04,gold,musicbox);
 const lid=new TransformNode('hinged lid',scene);lid.parent=musicbox;lid.position.set(0,.33,.25);box('box lid',0,0,-.25,.8,.08,.56,blue,lid);
 for(let i=0;i<3;i++)sphere('lid decoration',-.2+i*.2,.05,-.25,.09,.035,.09,gold,lid);
@@ -119,8 +119,8 @@ const clock=cyl('wall clock',2.87,2.84,3.22,.67,.09,wood);clock.rotation.x=Math.
 const face=cyl('clock face',2.87,2.84,3.16,.56,.025,cream);face.rotation.x=Math.PI/2;
 box('clock hand',2.87,2.94,3.135,.025,.21,.02,darkwood);const hand=box('clock hand',2.95,2.81,3.13,.19,.025,.02,darkwood);hand.rotation.z=-.3;
 // Small foreground details.
-box('toy blocks',2.65,.2,-1.96,.33,.32,.33,red);const block=box('toy block',3,.16,-1.79,.26,.24,.26,gold);block.rotation.y=.3;
-sphere('toy ball',2.9,.25,-2.52,.43,.43,.43,blue);
+box('toy blocks',3.35,.2,-1.15,.33,.32,.33,red);const block=box('toy block',2.95,.16,-1.15,.26,.24,.26,gold);block.rotation.y=.3;
+sphere('toy ball',3.35,.25,-1.7,.43,.43,.43,blue);
 const basket=cyl('floor basket',-3.15,.29,-2.27,.78,.49,wood,.85);for(let i=0;i<4;i++){const tor=MeshBuilder.CreateTorus('basket seam',{diameter:.79+i*.014,thickness:.026,tessellation:32},scene);tor.position.set(-3.15,.14+i*.1,-2.27);tor.material=lightwood;}
 sphere('basket blanket',-3.14,.57,-2.25,.73,.26,.65,white);
 // Little teddy on the bed.
