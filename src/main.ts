@@ -1,3 +1,4 @@
+import {createAdaptiveQuality} from './render-quality';
 import {installFurnishings} from './furnishings';
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
@@ -32,8 +33,9 @@ $('#app').innerHTML=`<canvas id="world" aria-label="Трёхмерная ком�
 
 $('#character-preview').onclick=()=>{window.location.href='/character.html'};
 const canvas=$<HTMLCanvasElement>('#world');
-const engine=new Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,adaptToDeviceRatio:false});
-engine.setHardwareScalingLevel(1/Math.min(window.devicePixelRatio,1.5));
+const engine=new Engine(canvas,false,{preserveDrawingBuffer:false,stencil:true,adaptToDeviceRatio:false});
+engine.maxFPS=60;
+engine.renderEvenInBackground=false;
 const scene=new Scene(engine);scene.clearColor=new Color4(.914,.914,.868,1);
 let cameraBoom=3.2;
 const camera=new ArcRotateCamera('camera',-Math.PI/2,1.4,3.2,new Vector3(0,1,0),scene);
@@ -42,7 +44,7 @@ const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.
 import.meta.hot?.dispose(()=>viewport.dispose());
 const hemi=new HemisphericLight('sky',new Vector3(0,1,0),scene);hemi.intensity=.85;hemi.diffuse=Color3.FromHexString('#fff1d8');hemi.groundColor=Color3.FromHexString('#85968e');
 const sun=new DirectionalLight('sun',new Vector3(-.7,-1,-.5),scene);sun.position=new Vector3(6,10,6);sun.intensity=2;sun.diffuse=Color3.FromHexString('#ffe2b1');
-const shadow=new ShadowGenerator(2048,sun);shadow.useBlurExponentialShadowMap=true;shadow.blurKernel=24;shadow.darkness=.22;shadow.bias=.002;
+const shadow=new ShadowGenerator(1024,sun);shadow.useBlurExponentialShadowMap=true;shadow.blurKernel=24;shadow.darkness=.22;shadow.bias=.002;
 scene.ambientColor=new Color3(.24,.24,.21);
 const mats:Record<string,StandardMaterial>={};
 function mat(name:string,hex:string){const m=new StandardMaterial(name,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=new Color3(.08,.07,.05);mats[name]=m;return m;}
@@ -238,8 +240,9 @@ if(interiorCheck){const id=new URLSearchParams(location.search).get('room');init
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
 girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
+const adaptiveQuality=createAdaptiveQuality();
 let time=0;
-engine.runRenderLoop(()=>{viewport.update();const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const input=controls.read($('.overlay').hidden&&!leavingHouse);
+engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTime());if(quality!==undefined)viewport.setQuality(quality);viewport.update();const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const input=controls.read($('.overlay').hidden&&!leavingHouse);
  const manual=(input.forward!==0||input.turn!==0)&&!leavingHouse;
  let manualMoving=false;
  if(manual){route=[];arrival=null;marker.isVisible=false;characterActionUntil=0;girl.rotation.y+=input.turn*dt*2.2;

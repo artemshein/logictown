@@ -1,5 +1,5 @@
 import {quiltPoint} from './quilt';
-import { Scene, StandardMaterial, DynamicTexture, Texture, Color3, Color4, Mesh, MeshBuilder, VertexData, Vector3, TransformNode, ArcRotateCamera, DefaultRenderingPipeline, SSAO2RenderingPipeline, HemisphericLight, DirectionalLight, ShadowGenerator } from '@babylonjs/core';
+import { Scene, StandardMaterial, DynamicTexture, Texture, Color3, Color4, Mesh, MeshBuilder, VertexData, Vector3, TransformNode, ArcRotateCamera, DefaultRenderingPipeline, HemisphericLight, DirectionalLight, ShadowGenerator } from '@babylonjs/core';
 
 // Deterministic, locally generated art: no network or placeholder asset dependency.
 let seed=9173;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
@@ -74,9 +74,8 @@ export function upgradeArt(scene:Scene,camera:ArcRotateCamera,shadow:ShadowGener
  for(let i=0;i<11;i++){const t=(i+.5)/11,z=-2.6+t*4.7,y=3.35-Math.sin(t*Math.PI)*.28;const bulb=MeshBuilder.CreateSphere('tiny warm bulb',{diameter:.044,segments:10},scene);bulb.position.set(-3.74,y-.055,z);bulb.material=bulbMat;if(i%2===0){const flag=new Mesh('linen pennant',scene),data=new VertexData();data.positions=[-3.75,y-.08,z-.1,-3.75,y-.08,z+.1,-3.75,y-.36,z];data.indices=[0,1,2,2,1,0];data.normals=[1,0,0,1,0,0,1,0,0];data.uvs=[0,0,1,0,.5,1];data.applyToMesh(flag);flag.material=i%4===0?get('rose linen'):get('dress');}}
  // Improve the light response, contact depth and tonal range.
  for(const light of scene.lights){if(light instanceof HemisphericLight){light.intensity=.66;light.diffuse=Color3.FromHexString('#e5edf0');light.groundColor=Color3.FromHexString('#9c8e7e')}if(light instanceof DirectionalLight){light.intensity=1.15;light.diffuse=Color3.FromHexString('#ffead1')}}
- shadow.useBlurExponentialShadowMap=false;shadow.useContactHardeningShadow=true;shadow.contactHardeningLightSizeUVRatio=.06;shadow.filteringQuality=ShadowGenerator.QUALITY_MEDIUM;shadow.darkness=.2;shadow.normalBias=.025;
+ shadow.useBlurExponentialShadowMap=false;shadow.useContactHardeningShadow=false;shadow.usePercentageCloserFiltering=true;shadow.contactHardeningLightSizeUVRatio=.06;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.darkness=.2;shadow.normalBias=.025;
  scene.ambientColor=new Color3(.08,.08,.08);scene.clearColor=Color4.FromHexString('#e5e1d6ff');
- const pipeline=new DefaultRenderingPipeline('finish',true,scene,[camera]);pipeline.samples=4;pipeline.fxaaEnabled=true;pipeline.imageProcessingEnabled=true;pipeline.imageProcessing.contrast=1.12;pipeline.imageProcessing.exposure=1.02;pipeline.bloomEnabled=true;pipeline.bloomThreshold=1.05;pipeline.bloomWeight=.1;pipeline.bloomKernel=32;pipeline.bloomScale=.5;
- if(scene.getEngine().getCaps().drawBuffersExtension){const ssao=new SSAO2RenderingPipeline('contact depth',scene,{ssaoRatio:.6,blurRatio:1},[camera]);ssao.radius=.18;ssao.totalStrength=.4;ssao.expensiveBlur=false;ssao.samples=16;ssao.maxZ=40;}
+ const pipeline=new DefaultRenderingPipeline('finish',true,scene,[camera]);pipeline.samples=1;pipeline.fxaaEnabled=true;pipeline.imageProcessingEnabled=true;pipeline.imageProcessing.contrast=1.12;pipeline.imageProcessing.exposure=1.02;pipeline.bloomEnabled=true;pipeline.bloomThreshold=1.05;pipeline.bloomWeight=.1;pipeline.bloomKernel=32;pipeline.bloomScale=.5;
 }
 

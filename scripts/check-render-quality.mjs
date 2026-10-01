@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {stripTypeScriptTypes} from 'node:module';
+import {renderRatio,createAdaptiveQuality} from '../src/render-quality.ts';
+assert.equal(renderRatio(800,600,1),1);
+assert.equal(renderRatio(800,600,2),1.25);
+const ratio=renderRatio(3000,2000,2);
+assert(3000*2000*ratio*ratio<=2_000_001,'large screens obey pixel budget');
+assert.equal(renderRatio(800,600,2,.7),.875);
+const controller=createAdaptiveQuality();
+const frames=(ms,count)=>{let result;for(let i=0;i<count;i++){const q=controller.sample(ms);if(q!==undefined)result=q}return result};
+assert.equal(frames(16.67,600),undefined,'60 FPS keeps quality');
+assert.equal(frames(40,180),.85,'sustained slow rendering reduces quality');
+assert.equal(frames(40,300),.7);
+assert.equal(frames(40,600),undefined,'quality has a lower bound');
+assert.equal(frames(16.67,600),undefined,'no quality oscillation');
+const stalls=createAdaptiveQuality();for(let i=0;i<500;i++)stalls.sample(1000);
+assert.equal(stalls.quality,1,'loading and background stalls do not lower quality');
+
+// Exercise the viewport against a fake engine to catch scaling resets on resize.
+const listeners=new Map();
+globalThis.window={devicePixelRatio:2,screen:{},addEventListener:(n,f)=>listeners.set(n,f),removeEventListener:n=>listeners.delete(n)};
+globalThis.ResizeObserver=class{observe(){} disconnect(){}};
+globalThis.cancelAnimationFrame=()=>{};
+globalThis.requestAnimationFrame=()=>1;
+const source=readFileSync(new URL('../src/viewport.ts',import.meta.url),'utf8').replace("'./render-quality'",JSON.stringify(new URL('../src/render-quality.ts',import.meta.url).href));
+const {createViewportSync}=await import('data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(source)).toString('base64'));
+const canvas={clientWidth:1200,clientHeight:800};let size,calls=0;
+const engine={setHardwareScalingLevel(){},setSize:(w,h)=>{size=[w,h];calls++},getRenderWidth:()=>size[0],getRenderHeight:()=>size[1]};
+const viewport=createViewportSync(canvas,engine);
+assert.deepEqual(size,[1500,1000]);viewport.update();assert.equal(calls,1);
+viewport.setQuality(.7);assert.deepEqual(size,[1050,700]);
+canvas.clientWidth=800;viewport.update();assert.deepEqual(size,[700,700],'resize retains adaptive quality');
+canvas.clientWidth=0;viewport.update();assert.equal(calls,3,'zero-size canvas leaves buffer intact');
+viewport.dispose();assert.equal(listeners.size,0);
+console.log('Rendering: pixel budget, sustained-load adaptation, stall protection and viewport resize passed');

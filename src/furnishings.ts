@@ -9,7 +9,7 @@ export function installFurnishings(scene:Scene,shadow:ShadowGenerator,rooms:Map<
  const wood=material('oak','#b58c78'),cream=material('ceramic','#eee3cd'),sage=material('paint','#8fa492'),rose=material('linen','#c29988'),brass=material('brass','#b89b60'),dark=material('ink','#52635f');
  const glow=material('warm glass','#fff0c9');glow.emissiveColor=new Color3(.65,.43,.18);
  for(const [id,room] of rooms){
-  const finish=(m:Mesh,x:number,y:number,z:number,mat:StandardMaterial)=>{m.parent=room.root;m.position.set(x,y,z);m.material=mat;m.receiveShadows=true;m.isPickable=false;shadow.addShadowCaster(m);return m};
+  const finish=(m:Mesh,x:number,y:number,z:number,mat:StandardMaterial)=>{m.parent=room.root;m.position.set(x,y,z);m.material=mat;m.receiveShadows=true;m.isPickable=false;if(m.getBoundingInfo().boundingBox.extendSize.length()>.22)shadow.addShadowCaster(m);return m};
   const box=(name:string,x:number,y:number,z:number,w:number,h:number,d:number,mat=wood)=>finish(roundedBox(scene,id+' accessory '+name,w,h,d),x,y,z,mat);
   const cylinder=(name:string,x:number,y:number,z:number,d:number,h:number,mat=cream,top=d)=>finish(MeshBuilder.CreateCylinder(id+' accessory '+name,{diameterBottom:d,diameterTop:top,height:h,tessellation:24},scene),x,y,z,mat);
   const sphere=(name:string,x:number,y:number,z:number,d:number,mat=cream)=>finish(MeshBuilder.CreateSphere(id+' accessory '+name,{diameter:d,segments:16},scene),x,y,z,mat);
