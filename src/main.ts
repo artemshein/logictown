@@ -1,3 +1,4 @@
+import {loadDog} from './dog';
 import {installOpenDoors} from './doors';
 import {createAdaptiveQuality} from './render-quality';
 import {installFurnishings} from './furnishings';
@@ -18,7 +19,7 @@ import './style.css';
 import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, HemisphericLight, DirectionalLight, ShadowGenerator, ArcRotateCamera, TransformNode, Mesh, PointerEventTypes, Ray, DynamicTexture } from '@babylonjs/core';
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
-const interiorCheck=import.meta.env.DEV&&location.pathname==='/checks/interior.html';
+const interiorCheck=import.meta.env.DEV&&['/checks/interior.html','/checks/dog.html'].includes(location.pathname);
 const memoryCheck=import.meta.env.DEV&&location.pathname==='/checks/house.html';
 const roomStorageKey=memoryCheck||interiorCheck?'logictown-memory-check-room':'logictown-room';
 let saved:{clue?:boolean;solved?:boolean}={};
@@ -189,9 +190,14 @@ function showPuzzle(){if(solved){showSuccess();return}modal(`<div class="eyebrow
 function showSuccess(){characterAction('Celebrate');modal(`<div class="eyebrow">Маленькая победа</div><div class="illustration" style="color:#d3a14b">✦</div><h2 id="modal-title">У тебя получилось!</h2><p>Шкатулка заиграла, а внутри оказалась<br><strong>золотая звёздочка — за любопытство.</strong></p><p>Это первое открытие Леи в Тихом городе.<br>Впереди ещё столько интересного!</p><button class="primary" id="success-ok">Продолжить исследовать</button>`);$('#success-ok').onclick=closeModal;}
 $('#bag-note').onclick=()=>clue?showNote():toast('Здесь будет храниться найденная записка.');$('#bag-star').onclick=()=>solved?showSuccess():toast('Здесь пока пусто. Что же спрятано в шкатулке?');$('#hint').onclick=()=>toast(clue?'Слева направо: луна, солнце, цветок. Нажми на значок над шкатулкой.':'Нажми на карандаш над письменным столом — Лея подойдёт к записке.');
 $('#help').onclick=()=>{modal(`<div class="eyebrow">Добро пожаловать домой</div><h2 id="modal-title">Маленькое приключение</h2><p>Нажми на свободное место на полу — Лея подойдёт туда, обходя мебель.</p><p>Открытые проходы соединяют весь дом. Нажми на название комнаты сверху — Лея сама дойдёт до неё. Камера плавно следует за Леей. Значки над предметами открывают маленькие истории. Найди бабушкину записку и открой музыкальную шкатулку.</p><p>Прогресс сохраняется в этом браузере.<br>Звук можно включить кнопкой ♪.</p><div class="modal-actions"><button class="secondary" id="reset">Начать заново</button><button class="primary" id="help-ok">Всё понятно</button></div>`);$('#help-ok').onclick=closeModal;$('#reset').onclick=()=>{clue=false;solved=false;selection=[0,0,0];attempts=0;route=[];arrival=null;marker.isVisible=false;switchRoom('bedroom');girl.position.set(.1,.11,-1.13);save();updateUI();closeModal();toast('Новое утро, новая история. Начнём с записки?')}};
-let audio:AudioContext|undefined,sound=false;
+let audio:AudioContext|undefined,sound=true;
+let barkBuffer:AudioBuffer|undefined;
+const unlockSound=()=>{audio??=new AudioContext();void audio.resume();if(!barkBuffer)void fetch('/audio/dog-bark.wav').then(r=>r.arrayBuffer()).then(b=>audio!.decodeAudioData(b)).then(b=>barkBuffer=b).catch(e=>console.warn('Puppy sound unavailable',e))};
+window.addEventListener('pointerdown',unlockSound,{once:true});window.addEventListener('keydown',unlockSound,{once:true});
+const bark=()=>{if(!sound||!barkBuffer||audio?.state!=='running')return false;const source=audio.createBufferSource(),gain=audio.createGain();source.buffer=barkBuffer;gain.gain.value=.3;source.connect(gain);gain.connect(audio.destination);source.start();return true};
+const soundButton=$('#sound');document.querySelector('#app')!.append(soundButton);soundButton.classList.add('companion-sound');soundButton.textContent='♫';soundButton.setAttribute('aria-label','Выключить звук');
 function tone(notes:number[]){if(!sound)return;audio??=new AudioContext();void audio.resume();notes.forEach((n,i)=>{const osc=audio!.createOscillator(),gain=audio!.createGain(),t=audio!.currentTime+i*.16;osc.type='sine';osc.frequency.value=n;gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.075,t+.01);gain.gain.exponentialRampToValueAtTime(.001,t+.65);osc.connect(gain);gain.connect(audio!.destination);osc.start(t);osc.stop(t+.7)})}
-$('#sound').onclick=()=>{sound=!sound;$('#sound').textContent=sound?'♫':'♪';$('#sound').setAttribute('aria-label',sound?'Выключить звук':'Включить звук');tone([523,659,784]);toast(sound?'Звуки шкатулки включены':'Звуки выключены')};
+$('#sound').onclick=()=>{unlockSound();sound=!sound;$('#sound').textContent=sound?'♫':'♪';$('#sound').setAttribute('aria-label',sound?'Выключить звук':'Включить звук');tone([523,659,784]);toast(sound?'Звуки включены':'Звуки выключены')};
 let memoryObjects:ReturnType<typeof installMemoryObjects>|undefined;
 const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAction('Celebrate'),changed:()=>memoryObjects?.sync(),exit:()=>{
  leavingHouse=true;marker.isVisible=false;route=[new Vector3(22,.11,-5.1)];memoryObjects?.sync();
@@ -242,6 +248,14 @@ if(interiorCheck){const id=new URLSearchParams(location.search).get('room');init
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
 girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
+let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
+void loadDog(scene,girl,shadow,bark).then(asset=>dog=asset).catch(e=>console.error('Unable to load puppy',e));
+const dogCheck=import.meta.env.DEV&&location.pathname==='/checks/dog.html';
+if(dogCheck){
+ const panel=document.createElement('nav');panel.style.cssText='position:fixed;top:8px;left:8px;z-index:20;background:#fff8;padding:8px;display:flex;gap:8px;flex-wrap:wrap';
+ for(const [name,x,z] of [['Спальня: фрагмент',-1.9,-.85],['Кухня: фрагмент',13.8,1.66],['Ванная: фрагмент',1.4,-11],['Коридор',8,-5.1],['На месте',0,-1.5]] as const){const button=document.createElement('button');button.textContent=name;button.onclick=()=>walkTo(new Vector3(x,.11,z));panel.append(button)}
+ const status=document.createElement('output');status.id='dog-status';panel.append(status);document.body.append(panel);
+}
 const adaptiveQuality=createAdaptiveQuality();
 let time=0;
 engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTime());if(quality!==undefined)viewport.setQuality(quality);viewport.update();const dt=Math.min(engine.getDeltaTime()/1000,.04);time+=dt;const input=controls.read($('.overlay').hidden&&!leavingHouse);
@@ -269,6 +283,8 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
    a.marker.mesh.setEnabled(!hit?.hit||hit.distance>=distance-.12);
   }
  }
+ dog?.update(dt,moving,memory.state.fragments,$('.overlay').hidden);
+ if(dogCheck&&dog)$('#dog-status').textContent=`Щенок ${dog.sitting?'сидит':'идёт / стоит'} · лай: ${dog.barked.join(',')||'нет'} · всего: ${dog.barkCount} · расстояние: ${Vector3.Distance(girl.position,dog.root.position).toFixed(2)}`;
  scene.render();
 });
 

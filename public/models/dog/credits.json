@@ -1,0 +1,16 @@
+{
+ "model": "Shiba Inu — Ultimate Animated Animals",
+ "author": "Quaternius / Tomás Laulhé",
+ "license": "CC0-1.0",
+ "source": "https://quaternius.com/packs/ultimateanimatedanimals.html",
+ "download": "https://github.com/Tekh-ops/Ultimate-Animated-Animals-July-2021/blob/main/glTF/ShibaInu.gltf",
+ "changes": "Packed as GLB; retained Idle and Walk clips. Sitting is posed at runtime using the original skeleton.",
+ "sound": {
+  "file": "/audio/dog-bark.wav",
+  "title": "Dog Barking (mono)",
+  "author": "Brandon Morris / HaelDB",
+  "license": "CC0-1.0",
+  "source": "https://opengameart.org/content/dog-barking-mono",
+  "changes": "First bark cropped to 0.35 seconds, faded and downsampled to mono 22050 Hz."
+ }
+}
