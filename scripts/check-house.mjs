@@ -23,3 +23,6 @@ console.log('All object interactions reachable across the shared floor');
 
 for(const [id,lx,lz] of [['bedroom',-2.75,-.65],['bedroom',2.9,-2.55],['living',3.25,1.05],['living',-.1,-2.2],['hall',7.5,-1.28]]){const [x,z]=layout[id];assert(houseBlocked(x+lx,z+lz),id+' added furniture must block walking')}
 console.log('Added cabinets, bedside table and ottoman block walking');
+
+for(const [id,entry] of Object.entries(entries)){const [x,z]=layout[id],r=roomInfo[id],edge=z+(z===0?-r.depth/2:r.depth/2);for(const dx of [-.5,0,.5])for(const dz of [0])assert(!houseBlocked(x+entry+dx,edge+dz),id+' open door must leave a walking lane '+dx+','+dz)}
+console.log('Open door leaves preserve a metre-wide lane at each threshold');

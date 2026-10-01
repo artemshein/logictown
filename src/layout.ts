@@ -17,3 +17,7 @@ export function houseBlocked(x:number,z:number){
  return false;
 }
 export const navigation={step:.2,originX:-4,originZ:-13.6,nx:121,nz:86};
+
+// Open leaves are physical obstacles, with the central doorway kept clear.
+for(const id of ['bedroom','living','kitchen'] as RoomId[])roomInfo.hall.obstacles.push({x:layout[id][0]-layout.hall[0]+entries[id]!-.92-.91,z:layout[id][1]-layout.hall[1]-roomInfo[id].depth/2-.2,w:1.82,d:.075});
+for(const id of ['bathroom','toilet'] as RoomId[])roomInfo[id].obstacles.push({x:entries[id]!+.92,z:roomInfo[id].depth/2-.2-.91,w:.075,d:1.82});

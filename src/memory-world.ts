@@ -32,7 +32,7 @@ export function installMemoryObjects(scene:Scene,shadow:ShadowGenerator,rooms:Ma
  pin('toilet','Зеркальная коробочка','◇',[-1.3,2.95,2.4],[-.4,1.35],quest.toilet);
  pin('living','Семейный альбом','▤',[-1,1.3,-.15],[.55,-.4],quest.living);
  pin('hall','Шкафчик «Дом помнит»','⚿',[-2,1.65,-1.4],[-2,-.45],quest.cabinet);
- // The only closed door is the exterior door; room passages stay open.
+ // The exterior door is interactive; interior doors remain propped open.
  for(const z of [-.88,.88])box('hall','exit jamb',11.95,1.4,z,.18,2.8,.14,paper);
  box('hall','exit lintel',11.95,2.8,0,.18,.14,1.9,paper);
  box('hall','exit threshold',11.95,.045,0,.4,.08,1.92,paper);

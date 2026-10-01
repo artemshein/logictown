@@ -1,3 +1,4 @@
+import {installOpenDoors} from './doors';
 import {createAdaptiveQuality} from './render-quality';
 import {installFurnishings} from './furnishings';
 import {createMovementControls} from './controls';
@@ -200,7 +201,8 @@ const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAc
 memoryObjects=installMemoryObjects(scene,shadow,houseRooms,memory);memoryObjects.sync();
 const interior=installInteriorLibrary(scene,shadow,houseRooms);
 installFurnishings(scene,shadow,houseRooms);
-const cameraWalls=Array.from(houseRooms.values()).flatMap(room=>room.root.getChildMeshes()).filter(m=>m.isEnabled()&&/wall|open passage/.test(m.name)&&!/tile|clock/.test(m.name)).map(mesh=>{
+installOpenDoors(scene,shadow,houseRooms);
+const cameraWalls=Array.from(houseRooms.values()).flatMap(room=>room.root.getChildMeshes()).filter(m=>m.isEnabled()&&/wall|open passage|^interior door leaf /.test(m.name)&&!/tile|clock/.test(m.name)).map(mesh=>{
  mesh.computeWorldMatrix(true);if(mesh.material){mesh.material.backFaceCulling=false;mesh.material.disableDepthWrite=false;mesh.material.forceDepthWrite=true}
  const b=mesh.getBoundingInfo().boundingBox;return {min:b.minimumWorld.clone(),max:b.maximumWorld.clone()};
 });
