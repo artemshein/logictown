@@ -11,3 +11,7 @@ export const roomInfo:Record<RoomId,{description:string;story:string;width:numbe
  hall:{description:'Пять дверей —\nи целый дом открытий.',story:'Отсюда можно попасть во все комнаты. Нажми на название над дверью — Лея подойдёт и войдёт.',width:8,depth:6.8,spawn:[.2,-1.6],doors:[{to:'bedroom',x:-2.6,z:3.4,wall:'back',approach:[-2.6,2.35]},{to:'living',x:0,z:3.4,wall:'back',approach:[0,2.35]},{to:'kitchen',x:2.6,z:3.4,wall:'back',approach:[2.6,2.35]},{to:'bathroom',x:-4,z:.9,wall:'left',approach:[-3.1,.9]},{to:'toilet',x:-4,z:-1.5,wall:'left',approach:[-3.1,-1.5]}],obstacles:[{x:3,z:-.4,w:1.2,d:2.2}]}
 };
 export function isBlocked(id:RoomId,x:number,z:number){const r=roomInfo[id];return Math.abs(x)>r.width/2-.42||Math.abs(z)>r.depth/2-.37||r.obstacles.some(o=>Math.abs(x-o.x)<o.w/2+.14&&Math.abs(z-o.z)<o.d/2+.14)}
+
+// Additional floor furniture; tabletop decorations and ceiling fixtures do not block walking.
+roomInfo.bedroom.obstacles.push({x:-2.75,z:-.65,w:.8,d:.71},{x:2.9,z:-2.55,w:1.48,d:.71});
+roomInfo.living.obstacles.push({x:3.25,z:1.05,w:.88,d:.76},{x:-.1,z:-2.2,w:.76,d:.76});

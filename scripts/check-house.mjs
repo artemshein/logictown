@@ -20,3 +20,6 @@ console.log('Open thresholds, partitions, furniture and outer bounds verified');
 const spots={bedroom:[[-.65,.8],[2.63,1.56],[-2,-2.5]],living:[[.55,-.4]],kitchen:[[-2.2,1.66],[1.85,-.7]],bathroom:[[-.7,1.9],[1.4,-.8]],toilet:[[-.4,1.35]],hall:[[-2,-.45],[10.8,0]]};
 for(const [id,targets] of Object.entries(spots))for(const [lx,lz] of targets){const target=[layout[id][0]+lx,layout[id][1]+lz];assert(!houseBlocked(...target),id+' interaction blocked');assert(seen.has(nearest(target)),id+' interaction unreachable')}
 console.log('All object interactions reachable across the shared floor');
+
+for(const [id,lx,lz] of [['bedroom',-2.75,-.65],['bedroom',2.9,-2.55],['living',3.25,1.05],['living',-.1,-2.2],['hall',7.5,-1.28]]){const [x,z]=layout[id];assert(houseBlocked(x+lx,z+lz),id+' added furniture must block walking')}
+console.log('Added cabinets, bedside table and ottoman block walking');
