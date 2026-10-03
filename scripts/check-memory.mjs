@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {freshQuest,restoreQuest,pour,award,unlock,medals} from '../src/memory-state.ts';
+import {freshQuest,restoreQuest,pour,award,unlock,unlockWithCode,CABINET_CODE,medals} from '../src/memory-state.ts';
 const s=freshQuest();assert(!unlock(s));assert(!award(s,'cup'));assert(!award(s,'boat'));assert(!award(s,'flower'));assert(!award(s,'book'));assert(!award(s,'moon'));
 s.plums=5;assert(award(s,'cup'));assert(award(s,'cup'));assert.equal(s.earned.length,1);
 s.jugs=[0,5];s.jugs=pour(s.jugs,1);assert.deepEqual(s.jugs,[3,2]);s.jugs[0]=0;s.jugs=pour(s.jugs,1);assert.deepEqual(s.jugs,[2,0]);s.jugs[1]=5;s.jugs=pour(s.jugs,1);assert.deepEqual(s.jugs,[3,4]);assert(award(s,'boat'));
@@ -12,3 +12,11 @@ const seen=new Set(['0,0']),queue=[[0,0]];for(let k=0;k<queue.length;k++){const 
 const permutations=a=>a.length?a.flatMap((x,i)=>permutations(a.filter((_,j)=>j!==i)).map(p=>[x,...p])):[[]];
 const solutions=permutations([...medals]).filter(p=>{const at=m=>p.indexOf(m);return at('flower')<at('cup')&&at('cup')<at('book')&&at('boat')===at('cup')+1&&at('book')>at('boat')&&at('book')<at('moon')});assert.deepEqual(solutions,[[...medals]]);
 console.log('Full quest, wrong answers, prerequisites, save/load, water states and unique final solution passed');
+
+const returning=freshQuest(),untouched=JSON.stringify(returning);
+for(const code of ['', '00000', '4253', '425310', 'abcde']){assert(!unlockWithCode(returning,code));assert.equal(JSON.stringify(returning),untouched)}
+assert(unlockWithCode(returning,CABINET_CODE));assert(returning.key);assert.deepEqual(returning.earned,[],'code must not award quest medals');
+returning.exited=true;assert.deepEqual(restoreQuest(JSON.parse(JSON.stringify(returning))),returning,'code key and exit must survive reload');
+assert(!restoreQuest({key:true,cabinetCodeUnlocked:false}).key);
+assert(unlockWithCode(returning,' '+CABINET_CODE+' '));
+console.log('Cabinet code: wrong codes rejected, key unlocked without quests, progress unchanged and key/exit restored.');
