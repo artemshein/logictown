@@ -12,7 +12,7 @@ export const outdoorFences:OutdoorObstacle[]=[
 ];
 export const outdoorObstacles:OutdoorObstacle[]=[
  ...outdoorHomes.map(h=>({...h,w:9,d:8,kind:'house'})),...outdoorFences,
- ...outdoorTrees.map(t=>({...t,w:.6,d:.6,kind:'tree'})),
+ ...outdoorTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),
  {x:4,z:9,w:4,d:2.7,kind:'swing'},
 ];
 export function outdoorBlocked(x:number,z:number){return x< -63||x>63||z< -48||z>15||outdoorObstacles.some(o=>Math.abs(x-o.x)<o.w/2+.25&&Math.abs(z-o.z)<o.d/2+.25)}

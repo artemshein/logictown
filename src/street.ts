@@ -18,7 +18,7 @@ const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.f
 const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.35,5.6,new Vector3(0,1.35,-6.3),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=5.6;
 const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;boom=aspect<.8?6.2:5.6});
 const sky=new HemisphericLight('clear blue sky',Vector3.Up(),scene);sky.intensity=.95;sky.diffuse=new Color3(.83,.93,1);sky.groundColor=new Color3(.45,.52,.34);
-const sun=new DirectionalLight('bright afternoon sun',new Vector3(-.6,-1,.4),scene);sun.intensity=2.8;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
+const sun=new DirectionalLight('bright afternoon sun',new Vector3(-.6,-1,.4),scene);sun.intensity=1.65;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
 const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.002;shadow.normalBias=.02;shadow.darkness=.22;
 const orb=MeshBuilder.CreateSphere('sun disc',{diameter:5,segments:16},scene);orb.position.set(65,90,-95);orb.isPickable=false;const sunMaterial=new StandardMaterial('sunlight',scene);sunMaterial.disableLighting=true;sunMaterial.emissiveColor=new Color3(1,1,.88);orb.material=sunMaterial;
 const lea=new TransformNode('Lea outdoors',scene);lea.position.set(outdoorSpawn.x,.11,outdoorSpawn.z);const controls=createMovementControls(app),quality=createAdaptiveQuality();
@@ -35,7 +35,7 @@ async function start(){
  const dog=await loadDog(scene,lea,shadow,()=>false,{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
  scene.environmentIntensity=.75;
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
- if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['У калитки',0,-11],['На улице',20,-18],['Задний двор',0,9],['Перед домом',0,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(x,.11,z));nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
+ if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['У калитки',0,-11],['На улице',20,-18],['Задний двор',0,9],['У дерева',5,3],['Перед домом',0,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(x,.11,z));nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
   const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning);let moving=false;

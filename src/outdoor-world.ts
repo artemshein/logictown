@@ -33,7 +33,10 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   const meshes=root.getChildMeshes().filter(m=>m.getTotalVertices());meshes.forEach(m=>{m.receiveShadows=true;shadow.addShadowCaster(m)});return {root,meshes,animations:instance.animationGroups};
  }
  for(const home of outdoorHomes)place('building-type-'+home.model,home.x===0&&home.z===0?'Lea home':'neighbour house',home.x,home.z,9,home.model==='a'?5.8:6.8,8,home.angle);
- for(const [i,t]of outdoorTrees.entries())place(t.small?'tree-small':'tree-large','garden tree '+i,t.x,t.z,t.small?2.3:3,t.small?3.8:5.5,t.small?2.6:3.5,i*.7);
+ for(const [i,t]of outdoorTrees.entries()){
+  const name=t.small?'tree-small':'tree-large',b=templateBounds.get(name)!,height=(t.small?4.2:6.2)*(1+(i%3-1)*.08),scale=height/b.size.y;
+  place(name,'garden tree '+i,t.x,t.z,b.size.x*scale,height,b.size.z*scale,i*.7);
+ }
  const fenceMeshes:Mesh[]=[];
  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.ceil(length/2),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place('fence',label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.15,.18,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
  for(const f of outdoorFences)fenceLine(f.x,f.z,Math.max(f.w,f.d),f.d>f.w?Math.PI/2:0,f.kind==='gate'?'open garden gate':'garden fence');
