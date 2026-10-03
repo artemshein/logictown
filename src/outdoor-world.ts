@@ -40,7 +40,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  }
  for(const [plot,fences]of outdoorFenceGroups.entries()){
   const fenceMeshes:Mesh[]=[];
-  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.ceil(length/2),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place('fence',label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.15,.18,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
+  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.max(1,Math.round(length/6)),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place('fence',label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.2,.147,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
   for(const f of fences)fenceLine(f.x,f.z,Math.max(f.w,f.d),f.d>f.w?Math.PI/2:0,`plot ${plot} ${f.kind==='gate'?'open garden gate':'garden fence'}`);
   // One draw call per plot lets the camera cull gardens outside its view.
   fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
