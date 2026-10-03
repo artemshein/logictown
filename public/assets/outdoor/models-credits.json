@@ -46,10 +46,11 @@
     },
     {
       "file": "fence.glb",
-      "author": "Kenney",
-      "license": "CC0-1.0",
-      "source": "https://kenney.nl/assets/city-kit-suburban",
-      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+      "author": "minime453",
+      "license": "CC-BY-4.0",
+      "source": "https://opengameart.org/content/wooden-fences-0",
+      "changes": "LOD1 VarA_A converted from FBX to GLB; 1024px PBR textures; axes and placement adjusted",
+      "triangles": 1614
     },
     {
       "file": "swing.glb",

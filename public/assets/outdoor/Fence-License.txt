@@ -1,0 +1,8 @@
+Wooden Fences by minime453
+Source: https://opengameart.org/content/wooden-fences-0
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+Used: WoodenFence_VarA_A_LOD1 and WoodenFence material maps.
+Changes: FBX converted to GLB, horizontal axis rotated, textures resized to
+1024px JPEG, metallic/roughness channels packed; scaled and repeated in game.
