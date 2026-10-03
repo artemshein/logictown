@@ -7,14 +7,21 @@ export const outdoorEntrance={x:0,z:-5.8};
 export const outdoorDoor={x:0,z:-4.3};
 export const outdoorSwing={x:4,z:11};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>({...h,z:h.z+(h.angle===0?2:-2),...outdoorHouseDimensions,h:h.model==='a'?8.7:10.2}));
-export const outdoorTrees=[{x:-8,z:8,small:false},{x:8,z:3,small:false},{x:-8,z:-5,small:true},{x:9,z:12,small:true},...[-52,-26,26,52].flatMap(x=>[{x:x-9,z:9,small:false},{x:x+9,z:-7,small:true}]),...[-48,-12,15,46].map(x=>({x,z:-46,small:false}))];
-export const outdoorFences:OutdoorObstacle[]=[
- {x:-12,z:1,w:.2,d:26,kind:'fence'},{x:12,z:1,w:.2,d:26,kind:'fence'},
- {x:0,z:14,w:24,d:.2,kind:'fence'},
- {x:-6.7,z:-12,w:10.6,d:.2,kind:'fence'},{x:6.7,z:-12,w:10.6,d:.2,kind:'fence'},
- // Gate is already open, parked beside the right post inside the yard.
- {x:1.4,z:-10.6,w:.2,d:2.8,kind:'gate'},
-];
+export const outdoorTrees=[{x:-8,z:8,small:false},{x:8,z:3,small:false},{x:-8,z:-5,small:true},{x:9,z:12,small:true},...[-52,-26,26,52].flatMap(x=>[{x:x-9,z:9,small:false},{x:x+9,z:-7,small:true}]),...[-26,0,26].map(x=>({x:x-9,z:-46,small:false}))];
+// Each plot has a street-facing opening and a gate leaf parked inside the garden.
+export const outdoorFenceGroups:OutdoorObstacle[][]=outdoorHomes.map(home=>{
+ const facing=home.angle===0?-1:1,front=home.angle===0?-12:-24,back=home.angle===0?14:-48;
+ const mid=(front+back)/2,depth=Math.abs(front-back);
+ return [
+  {x:home.x-12,z:mid,w:.2,d:depth,kind:'fence'},
+  {x:home.x+12,z:mid,w:.2,d:depth,kind:'fence'},
+  {x:home.x,z:back,w:24,d:.2,kind:'fence'},
+  {x:home.x-6.7,z:front,w:10.6,d:.2,kind:'fence'},
+  {x:home.x+6.7,z:front,w:10.6,d:.2,kind:'fence'},
+  {x:home.x+1.4,z:front-facing*1.4,w:.2,d:2.8,kind:'gate'},
+ ];
+});
+export const outdoorFences=outdoorFenceGroups.flat();
 export const outdoorObstacles:OutdoorObstacle[]=[
  ...outdoorHomes.map(h=>({...h,kind:'house'})),...outdoorFences,
  ...outdoorTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),

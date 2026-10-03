@@ -1,6 +1,6 @@
 import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import {outdoorHomes,outdoorTrees,outdoorFences,outdoorSwing} from './outdoor-layout';
+import {outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
   const mat=new StandardMaterial('outdoor '+name,scene);mat.specularColor=new Color3(.04,.04,.04);
@@ -37,12 +37,14 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   const name=t.small?'tree-small':'tree-large',b=templateBounds.get(name)!,height=(t.small?4.2:6.2)*(1+(i%3-1)*.08),scale=height/b.size.y;
   place(name,'garden tree '+i,t.x,t.z,b.size.x*scale,height,b.size.z*scale,i*.7);
  }
- const fenceMeshes:Mesh[]=[];
- function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.ceil(length/2),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place('fence',label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.15,.18,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
- for(const f of outdoorFences)fenceLine(f.x,f.z,Math.max(f.w,f.d),f.d>f.w?Math.PI/2:0,f.kind==='gate'?'open garden gate':'garden fence');
- // Merge the repeated static fence segments into one draw call.
- fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
- const merged=Mesh.MergeMeshes(fenceMeshes,true,true,undefined,false,false);if(merged){merged.name='fence and open gate';merged.receiveShadows=true;shadow.addShadowCaster(merged)}
+ for(const [plot,fences]of outdoorFenceGroups.entries()){
+  const fenceMeshes:Mesh[]=[];
+  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.ceil(length/2),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place('fence',label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.15,.18,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
+  for(const f of fences)fenceLine(f.x,f.z,Math.max(f.w,f.d),f.d>f.w?Math.PI/2:0,`plot ${plot} ${f.kind==='gate'?'open garden gate':'garden fence'}`);
+  // One draw call per plot lets the camera cull gardens outside its view.
+  fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
+  const merged=Mesh.MergeMeshes(fenceMeshes,true,true,undefined,false,false);if(merged){merged.name=`plot ${plot} fence and open gate`;merged.receiveShadows=true;shadow.addShadowCaster(merged)}
+ }
  const swing=place('swing','backyard swings',outdoorSwing.x,outdoorSwing.z,3.76,2.475,1.69);swing.animations.forEach(a=>a.start(true));
  return {floors};
 }

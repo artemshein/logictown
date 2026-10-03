@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import {validateBytes} from 'gltf-validator';
-import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing} from '../src/outdoor-layout.ts';
+import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing,outdoorFenceGroups} from '../src/outdoor-layout.ts';
 const moduleUrl=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const layoutUrl=moduleUrl(fs.readFileSync('src/layout.ts','utf8').replace("'./house-data'",JSON.stringify(new URL('../src/house-data.ts',import.meta.url).href)));
 const {createDogMotion}=await import(moduleUrl(fs.readFileSync('src/dog-motion.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl))));
-const targets=[outdoorSpawn,{x:0,z:-11},{x:0,z:-14},{x:20,z:-18},{x:20,z:-22.5},{x:-55,z:-18},{x:55,z:-18},{x:0,z:9},{x:8,z:10},outdoorSpawn];
+const neighbourTargets=outdoorHomes.flatMap(h=>{const facing=h.angle===0?-1:1,front=facing===-1?-12:-24,back=facing===-1?14:-48;return [{x:h.x,z:front-facing},{x:h.x,z:h.z+facing*(h.d/2+1.8)},{x:h.x,z:back+facing*2}]});
+const targets=[...neighbourTargets,outdoorSpawn,{x:0,z:-11},{x:0,z:-14},{x:20,z:-18},{x:20,z:-22.5},{x:-55,z:-18},{x:55,z:-18},{x:0,z:9},{x:8,z:10},outdoorSpawn];
 let lea={...outdoorSpawn};const dog=createDogMotion(outdoorCompanionTarget(lea,0),{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
 for(const target of targets){const path=outdoorPath(lea,target);assert.ok(path.length||Math.hypot(lea.x-target.x,lea.z-target.z)<.6,JSON.stringify(target));
  for(const p of path){assert.equal(outdoorBlocked(p.x,p.z),false);const dx=p.x-lea.x,dz=p.z-lea.z,heading=Math.atan2(dx,dz),steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.05));
@@ -22,6 +23,9 @@ assert.equal(outdoorBlocked(outdoorEntrance.x,outdoorEntrance.z),false);assert.e
 assert.ok(outdoorDoor.z<ownHome.z-ownHome.d/2);assert.ok(outdoorSwing.z-2.7/2>ownHome.z+ownHome.d/2+.25);
 assert.equal(outdoorBlocked(5,0),true,'enlarged house footprint blocks movement');
 for(const h of outdoorHomes)assert.ok(h.h>=8.7);
+assert.equal(outdoorFenceGroups.length,outdoorHomes.length);
+for(const [i,h]of outdoorHomes.entries()){const group=outdoorFenceGroups[i],front=h.angle===0?-12:-24;assert.equal(group.length,6);assert.equal(group.filter(f=>f.kind==='gate').length,1);assert.equal(outdoorBlocked(h.x,front),false,'neighbour gate passage open');for(const f of group)assert.ok(outdoorBlocked(f.x,f.z))}
+for(const z of [-18,-13.5,-22.5])for(let x=-60;x<=60;x+=.5)assert.equal(outdoorBlocked(x,z),false,'street and pavements stay clear');
 assert.equal(outdoorBlocked(0,-12),false,'gate passage open');assert.equal(outdoorBlocked(1.4,-10.6),true,'open gate leaf blocks movement');
 for(const f of outdoorFences)assert.ok(outdoorBlocked(f.x,f.z));for(const h of outdoorHomes)assert.ok(outdoorBlocked(h.x,h.z));for(const t of outdoorTrees)assert.ok(outdoorBlocked(t.x,t.z));
 assert.ok(outdoorBlocked(64,0));assert.ok(outdoorBlocked(0,16));assert.ok(outdoorBlocked(0,-49));
