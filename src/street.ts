@@ -29,6 +29,8 @@ let route:Vector3[]=[],transitioning=false;
 function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.position,p).map(p=>new Vector3(p.x,.11,p.z))}
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null;
 const check=!!checkMode;
+if(checkMode==='house-c')lea.position.set(26,.11,-6.3);
+if(checkMode==='house-d')lea.position.set(-52,.11,-6.3);
 if(checkMode==='shadow-road'){lea.position.set(20,.11,-18);lea.rotation.y=Math.PI}
 if(checkMode==='shadow-pavement'){lea.position.set(20,.11,-22.5);lea.rotation.y=Math.PI}
 function returnHome(){if(transitioning||!nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2))return;transitioning=true;route=[];loading.querySelector('strong')!.textContent='Возвращаемся домой…';loading.hidden=false;try{sessionStorage.setItem('logictown-return-home','1')}catch{}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(checkMode==='outdoor'?'/checks/outdoor.html':check?'/checks/house.html':'/')))}
@@ -40,7 +42,7 @@ async function start(){
  const dog=await loadDog(scene,lea,shadow,()=>false,{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
  scene.environmentIntensity=.75;
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
- if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',0,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(x,.11,z));nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
+ if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Оштукатуренный дом',26,-6.3],['Дом с верандой',-52,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(x,.11,z));nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
   const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning);let moving=false;

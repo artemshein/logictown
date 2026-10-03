@@ -1,12 +1,12 @@
 export type OutdoorPoint={x:number;z:number};
 export type OutdoorObstacle={x:number;z:number;w:number;d:number;kind:string};
-export const outdoorSpawn={x:0,z:-6.3};
-// Keep the front doors in place as the enlarged footprints extend into the plots.
-export const outdoorHouseDimensions={w:13.5,d:12};
-export const outdoorEntrance={x:0,z:-5.8};
-export const outdoorDoor={x:0,z:-4.3};
+export const outdoorSpawn={x:2.8,z:-6.3};
+// Native model proportions; each street-facing facade stays at its plot entrance.
+export const outdoorHouseDimensions={w:11,d:8.92};
+export const outdoorEntrance={x:2.8,z:-5.8};
+export const outdoorDoor={x:2.8,z:-4.3};
 export const outdoorSwing={x:4,z:11};
-export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>({...h,z:h.z+(h.angle===0?2:-2),...outdoorHouseDimensions,h:h.model==='a'?8.7:10.2}));
+export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=h.model==='a'?{...outdoorHouseDimensions,h:10.27}:h.model==='b'?{w:10,d:8.11,h:9.33}:h.model==='c'?{w:10.65,d:6.57,h:5.5}:{w:10.47,d:10.57,h:5.5};return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});
 export const outdoorTrees=[{x:-8,z:8,small:false},{x:8,z:3,small:false},{x:-8,z:-5,small:true},{x:9,z:12,small:true},...[-52,-26,26,52].flatMap(x=>[{x:x-9,z:9,small:false},{x:x+9,z:-7,small:true}]),...[-26,0,26].map(x=>({x:x-9,z:-46,small:false}))];
 // Each plot has a street-facing opening and a gate leaf parked inside the garden.
 export const outdoorFenceGroups:OutdoorObstacle[][]=outdoorHomes.map(home=>{

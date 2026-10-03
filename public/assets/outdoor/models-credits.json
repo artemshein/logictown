@@ -2,31 +2,35 @@
   "models": [
     {
       "file": "building-type-a.glb",
-      "author": "Kenney",
+      "author": "Drummyfish",
       "license": "CC0-1.0",
-      "source": "https://kenney.nl/assets/city-kit-suburban",
-      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+      "source": "https://opengameart.org/content/ordinary-house",
+      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance",
+      "triangles": 1764
     },
     {
       "file": "building-type-b.glb",
-      "author": "Kenney",
+      "author": "Drummyfish",
       "license": "CC0-1.0",
-      "source": "https://kenney.nl/assets/city-kit-suburban",
-      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+      "source": "https://opengameart.org/content/ordinary-house",
+      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance",
+      "triangles": 1764
     },
     {
       "file": "building-type-c.glb",
-      "author": "Kenney",
+      "author": "DREAM_SEARCH_REPEAT",
       "license": "CC0-1.0",
-      "source": "https://kenney.nl/assets/city-kit-suburban",
-      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+      "source": "https://opengameart.org/content/old-house-argentina-1872",
+      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance; removed stray duplicate rafters",
+      "triangles": 1601
     },
     {
       "file": "building-type-d.glb",
-      "author": "Kenney",
+      "author": "DREAM_SEARCH_REPEAT",
       "license": "CC0-1.0",
-      "source": "https://kenney.nl/assets/city-kit-suburban",
-      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+      "source": "https://opengameart.org/content/old-house-argentina-1872-2",
+      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance; removed stray duplicate rafters; aligned closed door with doorway",
+      "triangles": 2067
     },
     {
       "file": "tree-large.glb",

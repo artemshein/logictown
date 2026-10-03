@@ -1,6 +1,6 @@
 import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import {outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing} from './outdoor-layout';
+import {outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
   const mat=new StandardMaterial('outdoor '+name,scene);mat.specularColor=new Color3(.04,.04,.04);
@@ -19,7 +19,8 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  ground('neighbourhood lawn',0,-16,500,500,-.01,grass);
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
- ground('front garden path',0,-8,2.2,8,.04,paving);
+ ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
+ ground('gate connecting path',outdoorEntrance.x/2,-11,Math.abs(outdoorEntrance.x)+2.2,2.2,.041,paving);
  ground('swing landing',outdoorSwing.x,outdoorSwing.z,5.2,4,.025,paving);
  const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','swing'];
  const containers=new Map(await Promise.all(names.map(async name=>[name,await LoadAssetContainerAsync(`/assets/outdoor/${name}.glb`,scene)] as const)));
