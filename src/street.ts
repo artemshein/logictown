@@ -1,4 +1,4 @@
-import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,MeshBuilder,PointerEventTypes,Scene,ShadowGenerator,StandardMaterial,TransformNode,Vector3} from '@babylonjs/core';
+import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
 import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorHomes,outdoorEntrance,outdoorDoor} from './outdoor-layout';
 import {loadLea} from './lea';
@@ -10,18 +10,19 @@ import {createAdaptiveQuality} from './render-quality';
 import {createInteractionMarker} from './interaction-marker';
 import {cameraDistance} from './camera-collision';
 import {outdoorCameraAngle,outdoorCameraDirection} from './outdoor-camera';
+import {createOutdoorSky,outdoorSunDirection} from './outdoor-sky';
 import './style.css';
 const app=document.querySelector<HTMLElement>('#app')!;
 app.innerHTML='<canvas id="world" aria-label="Двор Леи и солнечная улица. Управление: WASD или стрелки справа. Можно пройти через открытую калитку."></canvas><div class="loading"><strong>Выходим на улицу…</strong><span>Тихий город</span></div><button class="street-home" hidden>⌂ В дом</button><div class="toast" role="status"></div>';
 const canvas=document.querySelector<HTMLCanvasElement>('#world')!,loading=document.querySelector<HTMLElement>('.loading')!,homeButton=document.querySelector<HTMLButtonElement>('.street-home')!;
 const engine=new Engine(canvas,false,{stencil:true,preserveDrawingBuffer:false,powerPreference:'high-performance'});engine.renderEvenInBackground=false;engine.maxFPS=60;
-const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.fogMode=Scene.FOGMODE_LINEAR;scene.fogStart=65;scene.fogEnd=145;scene.fogColor=new Color3(.34,.69,.96);
-const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.35,5.6,new Vector3(0,1.35,-6.3),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=5.6;
+const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.fogMode=Scene.FOGMODE_LINEAR;scene.fogStart=65;scene.fogEnd=145;scene.fogColor=new Color3(.68,.76,.82);
+const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.57,5.6,new Vector3(0,1.35,-6.3),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=5.6;
 const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;boom=aspect<.8?6.2:5.6});
 const sky=new HemisphericLight('clear blue sky',Vector3.Up(),scene);sky.intensity=.95;sky.diffuse=new Color3(.83,.93,1);sky.groundColor=new Color3(.45,.52,.34);
-const sun=new DirectionalLight('bright afternoon sun',new Vector3(-.6,-1,.4),scene);sun.intensity=1.65;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
+const sun=new DirectionalLight('bright afternoon sun',outdoorSunDirection.scale(-1),scene);sun.intensity=1.65;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
 const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.002;shadow.normalBias=.02;shadow.darkness=.22;
-const orb=MeshBuilder.CreateSphere('sun disc',{diameter:5,segments:16},scene);orb.position.set(65,90,-95);orb.isPickable=false;const sunMaterial=new StandardMaterial('sunlight',scene);sunMaterial.disableLighting=true;sunMaterial.emissiveColor=new Color3(1,1,.88);orb.material=sunMaterial;
+createOutdoorSky(scene);
 const lea=new TransformNode('Lea outdoors',scene);lea.position.set(outdoorSpawn.x,.11,outdoorSpawn.z);const controls=createMovementControls(app),quality=createAdaptiveQuality();
 let route:Vector3[]=[],transitioning=false;
 function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.position,p).map(p=>new Vector3(p.x,.11,p.z))}
@@ -45,7 +46,7 @@ async function start(){
   character.play(moving?'Walk':'Idle');dog.update(dt,moving,[],false);
   camera.target.set(lea.position.x,1.35,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
-  sun.position.set(lea.position.x+12,24,lea.position.z-16);const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near;pin.mesh.setEnabled(near);
+  sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near;pin.mesh.setEnabled(near);
   if(check)document.querySelector('#street-status')!.textContent=`Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · FPS ${engine.getFps().toFixed(0)}`;
   scene.render();
  });
