@@ -17,8 +17,8 @@ app.innerHTML='<canvas id="world" aria-label="Двор Леи и солнечн�
 const canvas=document.querySelector<HTMLCanvasElement>('#world')!,loading=document.querySelector<HTMLElement>('.loading')!,homeButton=document.querySelector<HTMLButtonElement>('.street-home')!;
 const engine=new Engine(canvas,false,{stencil:true,preserveDrawingBuffer:false,powerPreference:'high-performance'});engine.renderEvenInBackground=false;engine.maxFPS=60;
 const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.fogMode=Scene.FOGMODE_LINEAR;scene.fogStart=65;scene.fogEnd=145;scene.fogColor=new Color3(.68,.76,.82);
-const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.57,5.6,new Vector3(0,1.35,-6.3),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=5.6;
-const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;boom=aspect<.8?6.2:5.6});
+const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.25,3.8,new Vector3(outdoorSpawn.x,1.1,outdoorSpawn.z),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=3.8;
+const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;boom=aspect<.8?4.2:3.8});
 // Avoid saturating StandardMaterial's diffuse lighting: too much fill erases pavement shadows.
 const sky=new HemisphericLight('clear blue sky',Vector3.Up(),scene);sky.intensity=.45;sky.diffuse=new Color3(.83,.93,1);sky.groundColor=new Color3(.45,.52,.34);
 const sun=new DirectionalLight('bright afternoon sun',outdoorSunDirection.scale(-1),scene);sun.intensity=1.65;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
@@ -49,7 +49,7 @@ async function start(){
   if(input.forward||input.turn){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*3.3,outdoorBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!outdoorBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
   character.play(moving?'Walk':'Idle');dog.update(dt,moving,[],false);
-  camera.target.set(lea.position.x,1.35,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
+  camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near;pin.mesh.setEnabled(near);
   if(check)document.querySelector('#street-status')!.textContent=`Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · FPS ${engine.getFps().toFixed(0)}`;

@@ -18,6 +18,6 @@ const outdoorSource=(await import('node:fs')).readFileSync(new URL('../src/outdo
 const cameraUrl=new URL('../src/camera-collision.ts',import.meta.url).href;
 const {outdoorCameraAngle,outdoorCameraDirection}=await import('data:text/javascript;base64,'+Buffer.from((await import('node:module')).stripTypeScriptTypes(outdoorSource.replace("'./camera-collision'",JSON.stringify(cameraUrl)))).toString('base64'));
 const house={min:{x:-6.75,y:0,z:-4},max:{x:6.75,y:8.7,z:8}};
-for(const [origin,alpha]of [[{x:0,y:1.35,z:9},-Math.PI/2],[{x:7.5,y:1.35,z:2},Math.PI]]){const angle=outdoorCameraAngle(origin,alpha,1.35,5.6,[house]);assert.ok(cameraDistance(origin,outdoorCameraDirection(angle,1.35),5.6,[house])>=3.2)}
-assert.equal(outdoorCameraAngle({x:0,y:1.35,z:-6.3},-Math.PI/2,1.35,5.6,[house]),-Math.PI/2);
+for(const [origin,alpha]of [[{x:0,y:1.1,z:9},-Math.PI/2],[{x:7.5,y:1.1,z:2},Math.PI]]){const angle=outdoorCameraAngle(origin,alpha,1.25,3.8,[house]);assert.ok(cameraDistance(origin,outdoorCameraDirection(angle,1.25),3.8,[house])>=3.2)}
+assert.equal(outdoorCameraAngle({x:0,y:1.1,z:-6.3},-Math.PI/2,1.25,3.8,[house]),-Math.PI/2);
 console.log('Outdoor camera: enlarged rear and side walls keep a clear view; open front view unchanged.');
