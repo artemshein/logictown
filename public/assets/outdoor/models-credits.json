@@ -37,16 +37,16 @@
       "author": "Rob Tuytel and Rico Cilliers",
       "license": "CC0-1.0",
       "source": "https://polyhaven.com/a/island_tree_01",
-      "changes": "Meshoptimizer simplification preserving UVs and normals; 512px PBR textures; natural proportions at runtime",
-      "triangles": 32297
+      "changes": "Foliage retains 8% of original geometry, branches/trunk retain 2%; quantized geometry and 512px PBR textures; opaque double-sided RGB leaves; shared GPU instances at runtime",
+      "triangles": 95899
     },
     {
       "file": "tree-small.glb",
       "author": "Rico Cilliers",
       "license": "CC0-1.0",
       "source": "https://polyhaven.com/a/tree_small_02",
-      "changes": "Meshoptimizer simplification preserving UVs and normals; 512px PBR textures; natural proportions at runtime",
-      "triangles": 41225
+      "changes": "Foliage retains 8% of original geometry, branches/trunk retain 2%; quantized geometry and 512px PBR textures; opaque double-sided RGB leaves; shared GPU instances at runtime",
+      "triangles": 157584
     },
     {
       "file": "fence.glb",

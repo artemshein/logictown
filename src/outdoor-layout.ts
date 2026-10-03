@@ -7,7 +7,15 @@ export const outdoorEntrance={x:2.8,z:-5.8};
 export const outdoorDoor={x:2.8,z:-4.3};
 export const outdoorSwing={x:4,z:11};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=h.model==='a'?{...outdoorHouseDimensions,h:10.27}:h.model==='b'?{w:10,d:8.11,h:9.33}:h.model==='c'?{w:10.65,d:6.57,h:5.5}:{w:10.47,d:10.57,h:5.5};return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});
-export const outdoorTrees=[{x:-8,z:8,small:false},{x:8,z:3,small:false},{x:-8,z:-5,small:true},{x:9,z:12,small:true},...[-52,-26,26,52].flatMap(x=>[{x:x-9,z:9,small:false},{x:x+9,z:-7,small:true}]),...[-26,0,26].map(x=>({x:x-9,z:-46,small:false}))];
+export const outdoorTrees=outdoorHomes.flatMap(home=>{
+ const front=home.angle===0?-1:1,back=-front;
+ return [
+  {x:home.x-8,z:home.z+back*7,small:false},
+  {x:home.x+8,z:home.z+back*4,small:false},
+  {x:home.x-8.5,z:home.z+front*7,small:true},
+  {x:home.x+8.5,z:home.z+front*7,small:true},
+ ];
+});
 // Each plot has a street-facing opening and a gate leaf parked inside the garden.
 export const outdoorFenceGroups:OutdoorObstacle[][]=outdoorHomes.map(home=>{
  const facing=home.angle===0?-1:1,front=home.angle===0?-12:-24,back=home.angle===0?14:-48;

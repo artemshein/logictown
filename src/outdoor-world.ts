@@ -27,7 +27,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const templateBounds=new Map<string,{min:Vector3;size:Vector3}>();
  for(const [name,container]of containers){let min=new Vector3(Infinity,Infinity,Infinity),max=min.scale(-1);for(const m of container.meshes){if(!m.getTotalVertices())continue;m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;min=Vector3.Minimize(min,b.minimumWorld);max=Vector3.Maximize(max,b.maximumWorld)}templateBounds.set(name,{min,size:max.subtract(min)})}
  function place(name:string,label:string,x:number,z:number,w:number,h:number,d:number,angle=0){
-  const instance=containers.get(name)!.instantiateModelsToScene(n=>label+' '+n,false,{doNotInstantiate:true});
+  const instance=containers.get(name)!.instantiateModelsToScene(n=>label+' '+n,false,{doNotInstantiate:!name.startsWith('tree-')});
   const root=new TransformNode(label,scene),offset=new TransformNode(label+' origin',scene);offset.parent=root;
   const b=templateBounds.get(name)!;offset.scaling.set(w/b.size.x,h/b.size.y,d/b.size.z);offset.position.set(-(b.min.x+b.size.x/2)*offset.scaling.x,-b.min.y*offset.scaling.y,-(b.min.z+b.size.z/2)*offset.scaling.z);
   instance.rootNodes.forEach(n=>n.parent=offset);root.position.set(x,.04,z);root.rotation.y=angle;
