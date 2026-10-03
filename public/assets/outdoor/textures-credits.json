@@ -1,0 +1,30 @@
+[
+  {
+    "id": "grass_ground",
+    "source": "https://polyhaven.com/a/grass_ground",
+    "authors": {
+      "Charlotte Baglioni": "All"
+    },
+    "license": "CC0-1.0",
+    "changes": "512px JPEG color, normal and roughness maps; lawn tinted green at runtime"
+  },
+  {
+    "id": "asphalt_01",
+    "source": "https://polyhaven.com/a/asphalt_01",
+    "authors": {
+      "Dario Barresi": "Processing ",
+      "Charlotte Baglioni": "Photography"
+    },
+    "license": "CC0-1.0",
+    "changes": "512px JPEG color, normal and roughness maps"
+  },
+  {
+    "id": "pavement_01",
+    "source": "https://polyhaven.com/a/pavement_01",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "license": "CC0-1.0",
+    "changes": "512px JPEG color, normal and roughness maps"
+  }
+]

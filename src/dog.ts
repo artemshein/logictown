@@ -1,14 +1,14 @@
 import {ImportMeshAsync,Quaternion,Space,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import {createDogMotion,companionTarget,dogPath} from './dog-motion';
+import {createDogMotion,companionTarget,dogPath,type DogNavigation} from './dog-motion';
 import {createDogHints} from './dog-hints';
-export async function loadDog(scene:Scene,lea:TransformNode,shadow:ShadowGenerator,bark:()=>boolean){
+export async function loadDog(scene:Scene,lea:TransformNode,shadow:ShadowGenerator,bark:()=>boolean,nav?:DogNavigation){
  const result=await ImportMeshAsync('/models/dog/shiba-inu.glb',scene);
  const root=new TransformNode('Lea’s puppy',scene),asset=new TransformNode('puppy model',scene);asset.parent=root;asset.scaling.setAll(.19);
  result.meshes.filter(m=>!m.parent).forEach(m=>m.parent=asset);
  result.meshes.forEach(m=>{m.isPickable=false;m.receiveShadows=true;if(m.getTotalVertices())shadow.addShadowCaster(m)});
- const target=companionTarget(lea.position,lea.rotation.y),path=dogPath(lea.position,target);
- const motion=createDogMotion(path.at(-1)??{x:lea.position.x,z:lea.position.z});root.position.set(motion.position.x,.045,motion.position.z);
+ const target=(nav?.target??companionTarget)(lea.position,lea.rotation.y),path=(nav?.path??dogPath)(lea.position,target);
+ const motion=createDogMotion(path.at(-1)??{x:lea.position.x,z:lea.position.z},nav);root.position.set(motion.position.x,.045,motion.position.z);
  result.animationGroups.forEach(g=>g.stop());
  const nodes=result.transformNodes;
  const rest=nodes.map(node=>({node,p:node.position.clone(),q:node.rotationQuaternion?.clone()??Quaternion.Identity()}));

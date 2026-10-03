@@ -52,8 +52,5 @@ export function installMemoryObjects(scene:Scene,shadow:ShadowGenerator,rooms:Ma
  const handle=box('hall','front door handle',-.11,1.25,-1.4,.08,.08,.18,gold);handle.parent=hinge;
  const outsideHandle=box('hall','front door outside handle',.11,1.25,-1.4,.08,.08,.18,gold);outsideHandle.parent=hinge;
  pin('hall','Входная дверь','⌂',[11.8,2.9,0],[10.8,0],quest.door);
- const lawn=MeshBuilder.CreateBox('garden lawn',{width:7,height:.15,depth:7},scene);lawn.position.set(23.5,-.12,-5.1);lawn.material=material('garden lawn green','#a9b38b');
- const path=MeshBuilder.CreateBox('garden stone path',{width:6,height:.06,depth:1.7},scene);path.position.set(22.8,.01,-5.1);path.material=paper;
- for(const z of [-7.6,-2.6]){const tree=MeshBuilder.CreateSphere('garden shrub',{diameter:1.8,segments:12},scene);tree.position.set(24,.75,z);tree.material=sage;shadow.addShadowCaster(tree)}
- return {sync:()=>{for(const m of [keyRing,keyShaft,keyTooth])m.setEnabled(quest.state.key);for(const i of [0,1,2])scene.getMeshByName('photo fragment '+i)?.setEnabled(!quest.state.fragments.includes(i));drawer.position.z=quest.state.key?-.78:-1.07;hinge.rotation.y=quest.state.exited?-Math.PI/2:0;},door:hinge};
+ return {sync:()=>{for(const m of [keyRing,keyShaft,keyTooth])m.setEnabled(quest.state.key);for(const i of [0,1,2])scene.getMeshByName('photo fragment '+i)?.setEnabled(!quest.state.fragments.includes(i));drawer.position.z=quest.state.key?-.78:-1.07;hinge.rotation.y=0;},door:hinge};
 }

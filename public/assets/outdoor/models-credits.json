@@ -1,0 +1,63 @@
+{
+  "models": [
+    {
+      "file": "building-type-a.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "building-type-b.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "building-type-c.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "building-type-d.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "tree-large.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "tree-small.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "fence.glb",
+      "author": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "changes": "Original GLB and shared colormap; placement and scale adjusted at runtime"
+    },
+    {
+      "file": "swing.glb",
+      "author": "3D Assets",
+      "license": "CC0-1.0",
+      "source": "https://3dassets.dev/assets/city-park-and-playground-swing-set-7056310c",
+      "download": "https://cdn.3dassets.dev/assets/33652/v1/model.glb",
+      "aiGenerated": true,
+      "aiModel": "Claude Opus 5",
+      "changes": "Original GLB, original swing animation"
+    }
+  ]
+}

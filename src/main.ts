@@ -20,7 +20,8 @@ import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, 
 
 const $ = <T extends HTMLElement = HTMLElement>(s:string) => document.querySelector<T>(s)!;
 const interiorCheck=import.meta.env.DEV&&['/checks/interior.html','/checks/dog.html'].includes(location.pathname);
-const memoryCheck=import.meta.env.DEV&&location.pathname==='/checks/house.html';
+const outdoorCheck=import.meta.env.DEV&&location.pathname==='/checks/outdoor.html';
+const memoryCheck=import.meta.env.DEV&&['/checks/house.html','/checks/outdoor.html'].includes(location.pathname);
 const roomStorageKey=memoryCheck||interiorCheck?'logictown-memory-check-room':'logictown-room';
 let saved:{clue?:boolean;solved?:boolean}={};
 try{saved=JSON.parse(localStorage.getItem('logictown-v1')||'{}')}catch{}
@@ -200,10 +201,11 @@ function tone(notes:number[]){if(!sound)return;audio??=new AudioContext();void a
 $('#sound').onclick=()=>{unlockSound();sound=!sound;$('#sound').textContent=sound?'♫':'♪';$('#sound').setAttribute('aria-label',sound?'Выключить звук':'Включить звук');tone([523,659,784]);toast(sound?'Звуки включены':'Звуки выключены')};
 let memoryObjects:ReturnType<typeof installMemoryObjects>|undefined;
 const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAction('Celebrate'),changed:()=>memoryObjects?.sync(),exit:()=>{
- leavingHouse=true;marker.isVisible=false;route=[new Vector3(22,.11,-5.1)];memoryObjects?.sync();
- arrival=()=>{leavingHouse=false;modal(`<div class="memory"><h2 id="modal-title">За порогом</h2><p>Дверь открыта. Лея вышла из дома — впереди Тихий город.</p><blockquote>«Теперь у тебя есть своя история».</blockquote><button class="primary" id="return-home">Вернуться в дом</button></div>`);$('#return-home').onclick=returnHome};
+ leavingHouse=true;marker.isVisible=false;route=[];arrival=null;memoryObjects?.sync();
+ $('.loading span').textContent='Выходим на улицу…';$('.loading').hidden=false;
+ requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(outdoorCheck?'/street.html?check=outdoor':memoryCheck?'/street.html?check=1':'/street.html')));
 
-}},memoryCheck||interiorCheck?'logictown-memory-check-v1':'logictown-memory-v1');
+}},outdoorCheck?'logictown-outdoor-check-v1':memoryCheck||interiorCheck?'logictown-memory-check-v1':'logictown-memory-v1');
 memoryObjects=installMemoryObjects(scene,shadow,houseRooms,memory);memoryObjects.sync();
 const interior=installInteriorLibrary(scene,shadow,houseRooms);
 installFurnishings(scene,shadow,houseRooms);
@@ -218,9 +220,6 @@ scene.onPointerObservable.add(info=>{
  const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);
  hit?.pickedMesh?.metadata?.interaction?.();
 });
-function returnHome(){closeModal();leavingHouse=true;route=[new Vector3(18.8,.11,-5.1)];arrival=()=>{leavingHouse=false;switchRoom('hall')}}
-const returnPin=createInteractionMarker(scene,'Вернуться в дом','⌂',new Vector3(21.3,1.2,-5.1),returnHome);
-
 // The room graph is shared by door navigation, room selection and collision checks.
 $('#app').insertAdjacentHTML('beforeend',`<nav class="house-nav" aria-label="План дома">${Object.entries(roomNames).map(([id,name])=>`<button data-room="${id}" aria-pressed="${id==='bedroom'}">${name}</button>`).join('')}</nav><aside class="room-story quest" hidden><div class="quest-head">Наш дом <span>⌂</span></div><h2></h2><p></p><span class="room-count"></span></aside>`);
 let roomAnchors:{marker:ReturnType<typeof createInteractionMarker>;approach:Vector3}[]=[];
@@ -247,6 +246,7 @@ if(memoryCheck)initialRoom='hall';
 if(interiorCheck){const id=new URLSearchParams(location.search).get('room');initialRoom=id&&id in roomInfo?id as RoomId:'bedroom'}
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
+try{if(sessionStorage.getItem('logictown-return-home')){sessionStorage.removeItem('logictown-return-home');initialRoom='hall';girl.position.set(18.8,.11,-5.1)}}catch{}
 girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
 let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
 void loadDog(scene,girl,shadow,bark).then(asset=>dog=asset).catch(e=>console.error('Unable to load puppy',e));
@@ -262,8 +262,7 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
  const manual=(input.forward!==0||input.turn!==0)&&!leavingHouse;
  let manualMoving=false;
  if(manual){route=[];arrival=null;marker.isVisible=false;characterActionUntil=0;girl.rotation.y+=input.turn*dt*2.2;
- const outside=girl.position.x>20;
- const collides=(x:number,z:number)=>outside?(x<20.1||x>26.7||z< -8.2||z> -2):blocked(x,z);
+ const collides=blocked;
  const next=moveWithCollisions(girl.position,girl.rotation.y,input.forward*dt*2.9,collides);manualMoving=Math.hypot(next.x-girl.position.x,next.z-girl.position.z)>.0001;girl.position.x=next.x;girl.position.z=next.z;
  }
  const moving=manualMoving||route.length>0&&$('.overlay').hidden;if(route.length&&$('.overlay').hidden){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*2.9){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*2.9/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);const cameraAlpha=-Math.PI/2-girl.rotation.y;camera.alpha+=Math.atan2(Math.sin(cameraAlpha-camera.alpha),Math.cos(cameraAlpha-camera.alpha))*(1-Math.exp(-dt*7));
@@ -274,8 +273,8 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
  const allowed=cameraDistance(camera.target,direction,cameraBoom,walls);
  camera.radius=allowed<camera.radius?allowed:Math.min(allowed,camera.radius+dt*3);
  sun.position.set(girl.position.x+6,10,girl.position.z+6);camera.getViewMatrix();
- for(const a of [{marker:returnPin,approach:new Vector3(22,.11,-5.1)},...roomAnchors]){
-  const near=nearInteraction(girl.position,a.approach)&&$('.overlay').hidden&&(a.marker!==returnPin||girl.position.x>20);
+ for(const a of roomAnchors){
+  const near=nearInteraction(girl.position,a.approach)&&$('.overlay').hidden;
   a.marker.mesh.setEnabled(near);
   if(near){
    const delta=a.marker.mesh.position.subtract(camera.position),distance=delta.length();

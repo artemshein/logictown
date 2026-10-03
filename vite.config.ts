@@ -6,6 +6,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         game: 'index.html',
+        street: 'street.html',
         character: 'character.html',
       },
     },

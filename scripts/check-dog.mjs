@@ -8,7 +8,7 @@ const {createDogMotion,dogPath,dogBlocked,companionTarget}=await import(moduleUr
 const rooms=Object.values(layout).map(([x,z])=>({x:x+1.4,z}));
 for(const from of rooms)for(const to of rooms){const route=dogPath(from,to);assert.ok(route.length||Math.hypot(from.x-to.x,from.z-to.z)<.1);for(const p of route)assert.equal(dogBlocked(p.x,p.z),false)}
 let lea={x:0,z:0},dog=createDogMotion(companionTarget(lea,0));let seated=false,walked=false;
-for(const target of [...rooms,{x:22,z:-5.1},...rooms.reverse()]){
+for(const target of [...rooms,...rooms.reverse()]){
  const route=dogPath(lea,target);
  for(const next of route){for(let i=0;i<4;i++){lea={x:lea.x+(next.x-lea.x)/(4-i),z:lea.z+(next.z-lea.z)/(4-i)};const s=dog.update(.02,lea,0,true);walked ||= s.walked;assert.equal(dogBlocked(dog.position.x,dog.position.z),false)}}
  for(let i=0;i<1200;i++){const s=dog.update(.02,lea,0,false);seated=s.sitting;assert.equal(dogBlocked(dog.position.x,dog.position.z),false)}
@@ -16,7 +16,7 @@ for(const target of [...rooms,{x:22,z:-5.1},...rooms.reverse()]){
  assert.ok(Math.hypot(dog.position.x-lea.x,dog.position.z-lea.z)<1.65);
 }
 assert.ok(walked);assert.ok(seated);
-console.log('Dog follows through all rooms and porch, avoids obstacles and sits beside Lea.');
+console.log('Dog follows through all rooms, avoids obstacles and sits beside Lea.');
 
 const fragmentsUrl=moduleUrl(fs.readFileSync('src/puzzle-fragments.ts','utf8'));
 const {createDogHints}=await import(moduleUrl(fs.readFileSync('src/dog-hints.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl)).replace("'./puzzle-fragments'",JSON.stringify(fragmentsUrl))));
