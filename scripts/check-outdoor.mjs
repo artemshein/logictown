@@ -6,7 +6,7 @@ import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFe
 const moduleUrl=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const layoutUrl=moduleUrl(fs.readFileSync('src/layout.ts','utf8').replace("'./house-data'",JSON.stringify(new URL('../src/house-data.ts',import.meta.url).href)));
 const {createDogMotion}=await import(moduleUrl(fs.readFileSync('src/dog-motion.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl))));
-const targets=[outdoorSpawn,{x:0,z:-11},{x:0,z:-14},{x:20,z:-18},{x:-55,z:-18},{x:55,z:-18},{x:0,z:9},{x:8,z:10},outdoorSpawn];
+const targets=[outdoorSpawn,{x:0,z:-11},{x:0,z:-14},{x:20,z:-18},{x:20,z:-22.5},{x:-55,z:-18},{x:55,z:-18},{x:0,z:9},{x:8,z:10},outdoorSpawn];
 let lea={...outdoorSpawn};const dog=createDogMotion(outdoorCompanionTarget(lea,0),{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
 for(const target of targets){const path=outdoorPath(lea,target);assert.ok(path.length||Math.hypot(lea.x-target.x,lea.z-target.z)<.6,JSON.stringify(target));
  for(const p of path){assert.equal(outdoorBlocked(p.x,p.z),false);const dx=p.x-lea.x,dz=p.z-lea.z,heading=Math.atan2(dx,dz),steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.05));
