@@ -1,8 +1,13 @@
 export type OutdoorPoint={x:number;z:number};
 export type OutdoorObstacle={x:number;z:number;w:number;d:number;kind:string};
 export const outdoorSpawn={x:0,z:-6.3};
-export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}];
-export const outdoorTrees=[{x:-8,z:8,small:false},{x:8,z:3,small:false},{x:-8,z:-5,small:true},{x:7,z:12,small:true},...[-52,-26,26,52].flatMap(x=>[{x:x-7,z:7,small:false},{x:x+7,z:-6,small:true}]),...[-48,-12,15,46].map(x=>({x,z:-43,small:false}))];
+// Keep the front doors in place as the enlarged footprints extend into the plots.
+export const outdoorHouseDimensions={w:13.5,d:12};
+export const outdoorEntrance={x:0,z:-5.8};
+export const outdoorDoor={x:0,z:-4.3};
+export const outdoorSwing={x:4,z:11};
+export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>({...h,z:h.z+(h.angle===0?2:-2),...outdoorHouseDimensions,h:h.model==='a'?8.7:10.2}));
+export const outdoorTrees=[{x:-8,z:8,small:false},{x:8,z:3,small:false},{x:-8,z:-5,small:true},{x:9,z:12,small:true},...[-52,-26,26,52].flatMap(x=>[{x:x-9,z:9,small:false},{x:x+9,z:-7,small:true}]),...[-48,-12,15,46].map(x=>({x,z:-46,small:false}))];
 export const outdoorFences:OutdoorObstacle[]=[
  {x:-12,z:1,w:.2,d:26,kind:'fence'},{x:12,z:1,w:.2,d:26,kind:'fence'},
  {x:0,z:14,w:24,d:.2,kind:'fence'},
@@ -11,11 +16,11 @@ export const outdoorFences:OutdoorObstacle[]=[
  {x:1.4,z:-10.6,w:.2,d:2.8,kind:'gate'},
 ];
 export const outdoorObstacles:OutdoorObstacle[]=[
- ...outdoorHomes.map(h=>({...h,w:9,d:8,kind:'house'})),...outdoorFences,
+ ...outdoorHomes.map(h=>({...h,kind:'house'})),...outdoorFences,
  ...outdoorTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),
- {x:4,z:9,w:4,d:2.7,kind:'swing'},
+ {...outdoorSwing,w:4,d:2.7,kind:'swing'},
 ];
-export function outdoorBlocked(x:number,z:number){return x< -63||x>63||z< -48||z>15||outdoorObstacles.some(o=>Math.abs(x-o.x)<o.w/2+.25&&Math.abs(z-o.z)<o.d/2+.25)}
+export function outdoorBlocked(x:number,z:number){return x< -63||x>63||z< -48||z>15||outdoorObstacles.some(o=>Math.abs(x-o.x)<o.w/2+.25-1e-6&&Math.abs(z-o.z)<o.d/2+.25-1e-6)}
 const step=.5,ox=-63,oz=-48,nx=253,nz=127;
 const free=Array.from({length:nx*nz},(_,i)=>!outdoorBlocked(ox+i%nx*step,oz+Math.floor(i/nx)*step));
 const point=(id:number):OutdoorPoint=>({x:ox+id%nx*step,z:oz+Math.floor(id/nx)*step});

@@ -1,6 +1,6 @@
 import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import {outdoorHomes,outdoorTrees,outdoorFences} from './outdoor-layout';
+import {outdoorHomes,outdoorTrees,outdoorFences,outdoorSwing} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
   const mat=new StandardMaterial('outdoor '+name,scene);mat.specularColor=new Color3(.04,.04,.04);
@@ -20,7 +20,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
  ground('front garden path',0,-8,2.2,8,.04,paving);
- ground('swing landing',4,9,5.2,4,.025,paving);
+ ground('swing landing',outdoorSwing.x,outdoorSwing.z,5.2,4,.025,paving);
  const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','swing'];
  const containers=new Map(await Promise.all(names.map(async name=>[name,await LoadAssetContainerAsync(`/assets/outdoor/${name}.glb`,scene)] as const)));
  const templateBounds=new Map<string,{min:Vector3;size:Vector3}>();
@@ -32,7 +32,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   instance.rootNodes.forEach(n=>n.parent=offset);root.position.set(x,.04,z);root.rotation.y=angle;
   const meshes=root.getChildMeshes().filter(m=>m.getTotalVertices());meshes.forEach(m=>{m.receiveShadows=true;shadow.addShadowCaster(m)});return {root,meshes,animations:instance.animationGroups};
  }
- for(const home of outdoorHomes)place('building-type-'+home.model,home.x===0&&home.z===0?'Lea home':'neighbour house',home.x,home.z,9,home.model==='a'?5.8:6.8,8,home.angle);
+ for(const home of outdoorHomes)place('building-type-'+home.model,home.x===0&&home.angle===0?'Lea home':'neighbour house',home.x,home.z,home.w,home.h,home.d,home.angle);
  for(const [i,t]of outdoorTrees.entries()){
   const name=t.small?'tree-small':'tree-large',b=templateBounds.get(name)!,height=(t.small?4.2:6.2)*(1+(i%3-1)*.08),scale=height/b.size.y;
   place(name,'garden tree '+i,t.x,t.z,b.size.x*scale,height,b.size.z*scale,i*.7);
@@ -43,6 +43,6 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  // Merge the repeated static fence segments into one draw call.
  fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
  const merged=Mesh.MergeMeshes(fenceMeshes,true,true,undefined,false,false);if(merged){merged.name='fence and open gate';merged.receiveShadows=true;shadow.addShadowCaster(merged)}
- const swing=place('swing','backyard swings',4,9,3.76,2.475,1.69);swing.animations.forEach(a=>a.start(true));
+ const swing=place('swing','backyard swings',outdoorSwing.x,outdoorSwing.z,3.76,2.475,1.69);swing.animations.forEach(a=>a.start(true));
  return {floors};
 }

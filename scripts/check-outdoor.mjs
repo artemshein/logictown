@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import {validateBytes} from 'gltf-validator';
-import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees} from '../src/outdoor-layout.ts';
+import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing} from '../src/outdoor-layout.ts';
 const moduleUrl=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const layoutUrl=moduleUrl(fs.readFileSync('src/layout.ts','utf8').replace("'./house-data'",JSON.stringify(new URL('../src/house-data.ts',import.meta.url).href)));
 const {createDogMotion}=await import(moduleUrl(fs.readFileSync('src/dog-motion.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl))));
@@ -15,6 +15,13 @@ for(const target of targets){const path=outdoorPath(lea,target);assert.ok(path.l
  let state;for(let i=0;i<1600;i++)state=dog.update(.02,lea,0,false);
  assert.ok(state.sitting,'Dog must sit beside Lea at '+JSON.stringify(target));assert.ok(Math.hypot(dog.position.x-lea.x,dog.position.z-lea.z)<1.65);
 }
+const ownHome=outdoorHomes.find(h=>h.x===0&&h.angle===0);
+assert.equal(ownHome.w,13.5);assert.equal(ownHome.d,12);assert.equal(ownHome.h,8.7);
+assert.equal(ownHome.z-ownHome.d/2,-4,'front facade stays aligned with entrance');
+assert.equal(outdoorBlocked(outdoorEntrance.x,outdoorEntrance.z),false);assert.equal(outdoorBlocked(outdoorSpawn.x,outdoorSpawn.z),false);
+assert.ok(outdoorDoor.z<ownHome.z-ownHome.d/2);assert.ok(outdoorSwing.z-2.7/2>ownHome.z+ownHome.d/2+.25);
+assert.equal(outdoorBlocked(5,0),true,'enlarged house footprint blocks movement');
+for(const h of outdoorHomes)assert.ok(h.h>=8.7);
 assert.equal(outdoorBlocked(0,-12),false,'gate passage open');assert.equal(outdoorBlocked(1.4,-10.6),true,'open gate leaf blocks movement');
 for(const f of outdoorFences)assert.ok(outdoorBlocked(f.x,f.z));for(const h of outdoorHomes)assert.ok(outdoorBlocked(h.x,h.z));for(const t of outdoorTrees)assert.ok(outdoorBlocked(t.x,t.z));
 assert.ok(outdoorBlocked(64,0));assert.ok(outdoorBlocked(0,16));assert.ok(outdoorBlocked(0,-49));
