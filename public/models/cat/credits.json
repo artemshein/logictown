@@ -1,0 +1,11 @@
+{
+  "title": "Tuxedo Cat Animated 2.0",
+  "author": "DreamNoms",
+  "authorUrl": "https://sketchfab.com/DreamNoms",
+  "source": "https://sketchfab.com/3d-models/tuxedo-cat-animated-20-783fcb78b55b4394a212c2b6392e1113",
+  "download": "https://raw.githubusercontent.com/xialin-he/xialin-he.github.io/054a1f088cdd19544a8fd5d6d5eaad11e8b0d08e/public/tuxedo_cat_animated_2.0/scene.gltf",
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "file": "street-cat.glb",
+  "changes": "Packed original glTF into GLB; renamed idle/walk clips, duplicated walking cycle for faster escape playback; runtime scale to 0.43 metres tall. Geometry, smooth normals and original colors preserved."
+}
