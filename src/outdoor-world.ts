@@ -16,7 +16,8 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   for(const t of [surface.diffuseTexture,surface.bumpTexture])if(t instanceof Texture){const map=t.clone();map.uScale=w/3;map.vScale=d/3;if(t===surface.diffuseTexture)surface.diffuseTexture=map;else surface.bumpTexture=map}
   mesh.receiveShadows=true;floors.push(mesh);return mesh;
  }
- ground('neighbourhood lawn',0,-16,500,500,-.01,grass);
+ // Keep distant grass green: blue scene fog otherwise creates a false sky gap below the hills.
+ const lawn=ground('neighbourhood lawn',0,-16,500,500,-.01,grass);lawn.applyFog=false;
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
