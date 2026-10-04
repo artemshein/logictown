@@ -3,6 +3,7 @@ import {createSwingMotion} from './swing-motion';
 import type {loadLea} from './lea';
 export function createSwingRide(lea:TransformNode,character:Awaited<ReturnType<typeof loadLea>>,hinge:TransformNode,seat:AbstractMesh){
  const motion=createSwingMotion(),rest=hinge.rotationQuaternion?.clone()??Quaternion.FromEulerVector(hinge.rotation);
+ let angle=0;
  let exit=lea.position.clone(),exitHeading=0,hip=Vector3.Zero();
  // Seat origin is its centre. Use a local anchor so chains, seat and rider share the pivot.
  seat.computeWorldMatrix(true);
@@ -21,9 +22,9 @@ export function createSwingRide(lea:TransformNode,character:Awaited<ReturnType<t
   const grips=[-1,1].map(side=>Vector3.TransformCoordinates(seatPoint.add(new Vector3(side*.234,.38,0)),hinge.getWorldMatrix()));
   character.gripSwing(grips[0],grips[1]);
  }
- return {get active(){return motion.active},start(){
+ return {get active(){return motion.active},get angle(){return angle},start(){
   if(motion.active)return;exit=lea.position.clone();exitHeading=lea.rotation.y;lea.rotation.y=0;character.play('Sit');hip=character.hipOffset();motion.start();positionRider();
  },stop(){
-  if(!motion.active)return;motion.stop();hinge.rotationQuaternion=rest.clone();lea.rotationQuaternion=null;lea.rotation.set(0,exitHeading,0);lea.position.copyFrom(exit);character.play('Idle');
- },update(dt:number){if(!motion.active)return;hinge.rotationQuaternion=rest.multiply(Quaternion.RotationAxis(Vector3.Right(),motion.update(dt)));positionRider()}};
+  if(!motion.active)return;motion.stop();angle=0;hinge.rotationQuaternion=rest.clone();lea.rotationQuaternion=null;lea.rotation.set(0,exitHeading,0);lea.position.copyFrom(exit);character.play('Idle');
+ },update(dt:number){if(!motion.active)return;angle=motion.update(dt);hinge.rotationQuaternion=rest.multiply(Quaternion.RotationAxis(Vector3.Right(),angle));positionRider()}};
 }

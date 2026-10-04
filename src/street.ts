@@ -5,6 +5,7 @@ import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
+import {createSwingSound} from './swing-sound';
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
 import {createViewportSync} from './viewport';
@@ -49,6 +50,7 @@ const walls=outdoorObstacles.filter(o=>o.kind==='house'||o.kind==='fence'||o.kin
 async function start(){
  const [world,character]=await Promise.all([buildOutdoorWorld(scene,shadow),loadLea(scene,lea,shadow)]);
  const ride=createSwingRide(lea,character,world.swingHinge,world.swingSeat);
+ const swingSound=createSwingSound();scene.onDisposeObservable.add(()=>swingSound.dispose());
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
  const nearSwing=()=>Vector3.Distance(lea.position,world.swingSeat.getAbsolutePosition())<2.6&&!transitioning;
  swingButton.onclick=()=>{if(!nearSwing())return;route=[];controls.clear();ride.start()};
@@ -69,6 +71,7 @@ async function start(){
   if(!ride.active&&(input.forward||input.turn)){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*3.3,outdoorBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(!ride.active&&route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!outdoorBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
   if(ride.active)ride.update(dt);else character.play(moving?'Walk':'Idle');
+  swingSound.update(ride.active,ride.angle,dt,Vector3.Distance(lea.position,world.swingHinge.getAbsolutePosition()));
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
   dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
