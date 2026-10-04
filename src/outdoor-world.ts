@@ -63,6 +63,8 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
   const merged=Mesh.MergeMeshes(fenceMeshes,true,true,undefined,false,true);if(merged){merged.name=`plot ${plot} fence and open gate`;merged.receiveShadows=true;shadow.addShadowCaster(merged)}
  }
- const swing=place('swing','backyard swings',outdoorSwing.x,outdoorSwing.z,3.76,2.475,1.69);swing.animations.forEach(a=>a.start(true));
- return {floors};
+ const swing=place('swing','backyard swings',outdoorSwing.x,outdoorSwing.z,3.76,2.475,1.69);swing.animations.forEach(a=>a.stop());
+ const swingHinge=swing.root.getDescendants().find(n=>n.name.endsWith('seat-right')) as TransformNode;
+ const swingSeat=swing.meshes.find(m=>m.name.endsWith('seat-right/charcoal'))!;
+ return {floors,swingHinge,swingSeat};
 }

@@ -1,7 +1,7 @@
-import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Quaternion, Scene, ShadowGenerator, TransformNode, Vector3 } from '@babylonjs/core';
+import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Quaternion, Scene, ShadowGenerator, TransformNode, Vector3, Space, Matrix } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 
-export type LeaClip = 'Idle' | 'Walk' | 'Interact' | 'Celebrate';
+export type LeaClip = 'Idle' | 'Walk' | 'Interact' | 'Celebrate' | 'Sit';
 export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGenerator){
   const result=await ImportMeshAsync('/models/cute-chibi-girl.glb',scene);
   const pivot=new TransformNode('Lea asset orientation',scene);pivot.parent=parent;pivot.scaling.setAll(1.3);
@@ -46,9 +46,19 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
     result.animationGroups.forEach(g=>g.stop());
     restPose.forEach(({node,position,rotation})=>{node.position.copyFrom(position);if(rotation)node.rotationQuaternion=rotation.clone()});
     active=name;
+    if(name==='Sit'){
+      parent.computeWorldMatrix(true);
+      const right=Vector3.TransformNormal(Vector3.Right(),parent.getWorldMatrix()).normalize();
+      for(const [joint,angle] of [['LeftUpLeg',-Math.PI/2],['RightUpLeg',-Math.PI/2],['LeftLeg',Math.PI/2],['RightLeg',Math.PI/2],['LeftArm',-.75],['RightArm',-.75],['LeftForeArm',-.45],['RightForeArm',-.45]] as const){
+        const node=result.transformNodes.find(n=>n.name.includes(`:${joint}_`));
+        node?.rotate(right,angle,Space.WORLD);node?.computeWorldMatrix(true);
+      }
+      return;
+    }
     if(name==='Walk'){elapsed=0;return}
     if(name!=='Idle')clips.get(name==='Interact'?'pose_01':'pose_02')?.start(loop);
   };
   play('Idle');
-  return {pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
+  const hipOffset=()=>{const hip=result.transformNodes.find(n=>n.name.includes(':Hips_'))!;hip.computeWorldMatrix(true);return Vector3.TransformCoordinates(hip.getAbsolutePosition(),Matrix.Invert(parent.computeWorldMatrix(true)))};
+  return {hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
 }
