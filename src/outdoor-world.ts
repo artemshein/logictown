@@ -21,31 +21,45 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
- ground('gate connecting path',outdoorEntrance.x/2,-11,Math.abs(outdoorEntrance.x)+2.2,2.2,.041,paving);
+ if(outdoorEntrance.x!==0)ground('gate connecting path',outdoorEntrance.x/2,-11,Math.abs(outdoorEntrance.x)+2.2,2.2,.041,paving);
  ground('swing landing',outdoorSwing.x,outdoorSwing.z,5.2,4,.025,paving);
- const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','swing'];
- const containers=new Map(await Promise.all(names.map(async name=>[name,await LoadAssetContainerAsync(`/assets/outdoor/${name}.glb`,scene)] as const)));
+ const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','fence-wire','swing','garden-plant'];
+ const containers=new Map(await Promise.all(names.map(async name=>[name,await LoadAssetContainerAsync(name==='garden-plant'?'/assets/polyhaven/potted_plant_01.glb':`/assets/outdoor/${name}.glb`,scene)] as const)));
  const templateBounds=new Map<string,{min:Vector3;size:Vector3}>();
  for(const [name,container]of containers){let min=new Vector3(Infinity,Infinity,Infinity),max=min.scale(-1);for(const m of container.meshes){if(!m.getTotalVertices())continue;m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;min=Vector3.Minimize(min,b.minimumWorld);max=Vector3.Maximize(max,b.maximumWorld)}templateBounds.set(name,{min,size:max.subtract(min)})}
- function place(name:string,label:string,x:number,z:number,w:number,h:number,d:number,angle=0){
-  const instance=containers.get(name)!.instantiateModelsToScene(n=>label+' '+n,false,{doNotInstantiate:!name.startsWith('tree-')});
+ function place(name:string,label:string,x:number,z:number,w:number,h:number,d:number,angle=0,castShadow=true){
+  const instance=containers.get(name)!.instantiateModelsToScene(n=>label+' '+n,false,{doNotInstantiate:!name.startsWith('tree-')&&name!=='garden-plant'});
   const root=new TransformNode(label,scene),offset=new TransformNode(label+' origin',scene);offset.parent=root;
   const b=templateBounds.get(name)!;offset.scaling.set(w/b.size.x,h/b.size.y,d/b.size.z);offset.position.set(-(b.min.x+b.size.x/2)*offset.scaling.x,-b.min.y*offset.scaling.y,-(b.min.z+b.size.z/2)*offset.scaling.z);
   instance.rootNodes.forEach(n=>n.parent=offset);root.position.set(x,.04,z);root.rotation.y=angle;
-  const meshes=root.getChildMeshes().filter(m=>m.getTotalVertices());meshes.forEach(m=>{m.receiveShadows=true;shadow.addShadowCaster(m)});return {root,meshes,animations:instance.animationGroups};
+  const meshes=root.getChildMeshes().filter(m=>m.getTotalVertices());meshes.forEach(m=>{m.receiveShadows=true;if(castShadow)shadow.addShadowCaster(m)});return {root,meshes,animations:instance.animationGroups};
  }
  for(const home of outdoorHomes)place('building-type-'+home.model,home.x===0&&home.angle===0?'Lea home':'neighbour house',home.x,home.z,home.w,home.h,home.d,home.angle);
+ // Garden paths follow each facade; small planters use the existing CC0 plant model.
+ for(const home of outdoorHomes){
+  const facing=home.angle===0?-1:1,doorX=home.x+(home.model==='d'?-2.3:0)*(home.angle===0?1:-1),edge=home.z+facing*home.d/2,gate=home.angle===0?-12:-24;
+  if(home.x!==0||home.angle!==0){ground('neighbour garden walk',doorX,(edge+gate)/2,1.65,Math.abs(edge-gate)+.1,.04,paving);if(doorX!==home.x)ground('neighbour gate approach',(doorX+home.x)/2,gate-facing*.8,Math.abs(doorX-home.x)+1.65,1.65,.042,paving)}
+  if(home.model==='a'||home.model==='d')for(const side of [-1,1]){
+   const b=templateBounds.get('garden-plant')!,scale=1.35/b.size.y;
+   place('garden-plant','porch planter',doorX+side*1.8,edge-facing*.42,b.size.x*scale,1.35,b.size.z*scale,side*.6);
+  }
+ }
+ // A sparse belt of shared trees connects the gardens to the distant wooded ridges.
+ for(const z of [28,-66])for(const [i,x]of [-64,-46,-28,-10,10,28,46,64].entries()){
+  const b=templateBounds.get('tree-large')!,height=8.3+i%3*.8,scale=height/b.size.y;
+  place('tree-large','woodland boundary',x,z+(i%2)*3,b.size.x*scale,height,b.size.z*scale,i*.9,false);
+ }
  for(const [i,t]of outdoorTrees.entries()){
   const name=t.small?'tree-small':'tree-large',b=templateBounds.get(name)!,height=(t.small?4.2:6.2)*(1+(i%3-1)*.08),scale=height/b.size.y;
   place(name,'garden tree '+i,t.x,t.z,b.size.x*scale,height,b.size.z*scale,i*.7);
  }
  for(const [plot,fences]of outdoorFenceGroups.entries()){
-  const fenceMeshes:Mesh[]=[];
-  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.max(1,Math.round(length/6)),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place('fence',label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.2,.147,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
+  const fenceMeshes:Mesh[]=[],fenceType=plot%3===1?'fence-wire':'fence';
+  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.max(1,Math.round(length/2.8)),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place(fenceType,label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.35,.2,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
   for(const f of fences)fenceLine(f.x,f.z,Math.max(f.w,f.d),f.d>f.w?Math.PI/2:0,`plot ${plot} ${f.kind==='gate'?'open garden gate':'garden fence'}`);
-  // One draw call per plot lets the camera cull gardens outside its view.
+  // Group by material within each plot, preserving both timber and metal wire.
   fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
-  const merged=Mesh.MergeMeshes(fenceMeshes,true,true,undefined,false,false);if(merged){merged.name=`plot ${plot} fence and open gate`;merged.receiveShadows=true;shadow.addShadowCaster(merged)}
+  const merged=Mesh.MergeMeshes(fenceMeshes,true,true,undefined,false,true);if(merged){merged.name=`plot ${plot} fence and open gate`;merged.receiveShadows=true;shadow.addShadowCaster(merged)}
  }
  const swing=place('swing','backyard swings',outdoorSwing.x,outdoorSwing.z,3.76,2.475,1.69);swing.animations.forEach(a=>a.start(true));
  return {floors};

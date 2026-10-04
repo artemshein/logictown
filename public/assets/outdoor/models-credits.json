@@ -2,35 +2,35 @@
   "models": [
     {
       "file": "building-type-a.glb",
-      "author": "Drummyfish",
+      "author": "Logictown; photo textures by Rob Tuytel and Dimitrios Savva",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/ordinary-house",
-      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance",
-      "triangles": 1764
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "changes": "Original gambrel colonial exterior based on user reference, with Poly Haven CC0 siding, roof, shutter and brick textures; closed entry, porch, trim, window mullions and gutters",
+      "triangles": 6471
     },
     {
       "file": "building-type-b.glb",
-      "author": "Drummyfish",
+      "author": "Logictown; photo textures by Rob Tuytel and Dimitrios Savva",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/ordinary-house",
-      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance",
-      "triangles": 1764
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "changes": "Original gable colonial exterior based on user reference, with Poly Haven CC0 siding, roof, shutter and brick textures; closed entry, porch, trim, window mullions and gutters",
+      "triangles": 6467
     },
     {
       "file": "building-type-c.glb",
-      "author": "DREAM_SEARCH_REPEAT",
+      "author": "Logictown; photo textures by Rob Tuytel and Dimitrios Savva",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/old-house-argentina-1872",
-      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance; removed stray duplicate rafters",
-      "triangles": 1601
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "changes": "Original hip colonial exterior based on user reference, with Poly Haven CC0 siding, roof, shutter and brick textures; closed entry, porch, trim, window mullions and gutters",
+      "triangles": 6468
     },
     {
       "file": "building-type-d.glb",
-      "author": "DREAM_SEARCH_REPEAT",
+      "author": "Logictown; photo textures by Rob Tuytel and Dimitrios Savva",
       "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/old-house-argentina-1872-2",
-      "changes": "Converted to GLB; compressed photographic textures; native proportions and street-facing entrance; removed stray duplicate rafters; aligned closed door with doorway",
-      "triangles": 2067
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "changes": "Original farmhouse colonial exterior based on user reference, with Poly Haven CC0 siding, roof, shutter and brick textures; closed entry, porch, trim, window mullions and gutters",
+      "triangles": 2679
     },
     {
       "file": "tree-large.glb",
@@ -49,14 +49,6 @@
       "triangles": 157584
     },
     {
-      "file": "fence.glb",
-      "author": "khairul169",
-      "license": "CC0-1.0",
-      "source": "https://opengameart.org/content/low-poly-fence-textured",
-      "changes": "Authored OBJ converted to GLB, 1024px albedo/normal/metallic/roughness maps embedded; approximately six-metre panels with natural thickness; graphite finish derived from original albedo, surface details retained",
-      "triangles": 866
-    },
-    {
       "file": "swing.glb",
       "author": "3D Assets",
       "license": "CC0-1.0",
@@ -65,6 +57,22 @@
       "aiGenerated": true,
       "aiModel": "Claude Opus 5",
       "changes": "Original GLB, original swing animation"
+    },
+    {
+      "file": "fence.glb",
+      "author": "Logictown; photo textures by Rob Tuytel",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "changes": "Original picket garden fence based on user reference; capped posts, photographic wood PBR maps, bevelled pointed pickets and two rails",
+      "triangles": 672
+    },
+    {
+      "file": "fence-wire.glb",
+      "author": "Logictown; photo textures by Rob Tuytel",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/wood_planks_grey",
+      "changes": "Original wire garden fence based on user reference; capped posts, photographic wood PBR maps, wood frame and physical wire grid; no transparency texture",
+      "triangles": 432
     }
   ]
 }

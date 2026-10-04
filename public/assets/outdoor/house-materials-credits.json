@@ -1,0 +1,42 @@
+{
+  "geometry": "Original colonial and farmhouse exteriors and picket/wire fences created for Logictown from user architectural references",
+  "materials": [
+    {
+      "id": "white_planks_clean",
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "license": "CC0-1.0",
+      "changes": "1024px photo color, normal and roughness maps embedded in GLB; siding whitened, roof tinted charcoal; painted shutters use siding grain"
+    },
+    {
+      "id": "roof_slates_02",
+      "source": "https://polyhaven.com/a/roof_slates_02",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "license": "CC0-1.0",
+      "changes": "1024px photo color, normal and roughness maps embedded in GLB; siding whitened, roof tinted charcoal; painted shutters use siding grain"
+    },
+    {
+      "id": "brick_wall_001",
+      "source": "https://polyhaven.com/a/brick_wall_001",
+      "authors": {
+        "Rob Tuytel": "Processing",
+        "Dimitrios Savva": "Photography"
+      },
+      "license": "CC0-1.0",
+      "changes": "1024px photo color, normal and roughness maps embedded in GLB; siding whitened, roof tinted charcoal; painted shutters use siding grain"
+    },
+    {
+      "id": "wood_planks_grey",
+      "source": "https://polyhaven.com/a/wood_planks_grey",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "license": "CC0-1.0",
+      "changes": "512px color, normal and roughness maps embedded in wooden fence GLB; grain tinted warm brown"
+    }
+  ]
+}

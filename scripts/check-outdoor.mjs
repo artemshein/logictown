@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import {validateBytes} from 'gltf-validator';
-import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing,outdoorFenceGroups} from '../src/outdoor-layout.ts';
+
 const moduleUrl=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
+const {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing,outdoorFenceGroups}=await import(moduleUrl(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
 const layoutUrl=moduleUrl(fs.readFileSync('src/layout.ts','utf8').replace("'./house-data'",JSON.stringify(new URL('../src/house-data.ts',import.meta.url).href)));
 const {createDogMotion}=await import(moduleUrl(fs.readFileSync('src/dog-motion.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl))));
 const neighbourTargets=outdoorHomes.flatMap(h=>{const facing=h.angle===0?-1:1,front=facing===-1?-12:-24,back=facing===-1?14:-48;return [{x:h.x,z:front-facing},{x:h.x,z:h.z+facing*(h.d/2+1.8)},{x:h.x,z:back+facing*2}]});
@@ -17,7 +18,7 @@ for(const target of targets){const path=outdoorPath(lea,target);assert.ok(path.l
  assert.ok(state.sitting,'Dog must sit beside Lea at '+JSON.stringify(target));assert.ok(Math.hypot(dog.position.x-lea.x,dog.position.z-lea.z)<1.65);
 }
 const ownHome=outdoorHomes.find(h=>h.x===0&&h.angle===0);
-assert.equal(ownHome.w,11);assert.equal(ownHome.d,8.92);assert.equal(ownHome.h,10.27);
+assert.ok(ownHome.w>=15,'Lea home is a spacious two-storey house');assert.ok(ownHome.h>=9);assert.ok(ownHome.d>=12);
 assert.ok(Math.abs(ownHome.z-ownHome.d/2+4)<1e-8,'front facade stays aligned with entrance');
 assert.equal(outdoorBlocked(outdoorEntrance.x,outdoorEntrance.z),false);assert.equal(outdoorBlocked(outdoorSpawn.x,outdoorSpawn.z),false);
 assert.ok(outdoorDoor.z<ownHome.z-ownHome.d/2);assert.ok(outdoorSwing.z-2.7/2>ownHome.z+ownHome.d/2+.25);
@@ -36,7 +37,7 @@ for(const t of outdoorTrees){
 for(const f of outdoorFences)assert.ok(outdoorBlocked(f.x,f.z));for(const h of outdoorHomes)assert.ok(outdoorBlocked(h.x,h.z));for(const t of outdoorTrees)assert.ok(outdoorBlocked(t.x,t.z));
 assert.ok(outdoorBlocked(64,0));assert.ok(outdoorBlocked(0,16));assert.ok(outdoorBlocked(0,-49));
 const credits=JSON.parse(fs.readFileSync('public/assets/outdoor/models-credits.json'));
-for(const asset of credits.models){assert.ok(['CC0-1.0','CC-BY-4.0'].includes(asset.license));if(asset.license==='CC-BY-4.0'){assert.ok(asset.author);assert.ok(asset.source);assert.ok(asset.changes)};const bytes=fs.readFileSync('public/assets/outdoor/'+asset.file);const result=await validateBytes(new Uint8Array(bytes),{externalResourceFunction:async uri=>new Uint8Array(fs.readFileSync('public/assets/outdoor/'+uri))});assert.equal(result.issues.numErrors,0,asset.file+JSON.stringify(result.issues.messages));assert.ok(bytes.length<(asset.file.startsWith('tree-')?6500000:asset.triangles?3100000:400000));if(asset.triangles){const length=bytes.readUInt32LE(12),gltf=JSON.parse(bytes.subarray(20,20+length));const triangles=gltf.meshes.reduce((n,m)=>n+m.primitives.reduce((sum,p)=>sum+gltf.accessors[p.indices].count/3,0),0);assert.equal(triangles,asset.triangles);assert.ok(triangles<(asset.file.startsWith('tree-')?165000:asset.file==='fence.glb'?2000:45000));assert.ok(gltf.images.length>=(asset.file.startsWith('building-')?1:asset.file==='fence.glb'?3:6))}}
+for(const asset of credits.models){assert.ok(['CC0-1.0','CC-BY-4.0'].includes(asset.license));if(asset.license==='CC-BY-4.0'){assert.ok(asset.author);assert.ok(asset.source);assert.ok(asset.changes)};const bytes=fs.readFileSync('public/assets/outdoor/'+asset.file);const result=await validateBytes(new Uint8Array(bytes),{externalResourceFunction:async uri=>new Uint8Array(fs.readFileSync('public/assets/outdoor/'+uri))});assert.equal(result.issues.numErrors,0,asset.file+JSON.stringify(result.issues.messages));assert.ok(bytes.length<(asset.file.startsWith('tree-')?6500000:asset.triangles?3100000:400000));if(asset.triangles){const length=bytes.readUInt32LE(12),gltf=JSON.parse(bytes.subarray(20,20+length));const triangles=gltf.meshes.reduce((n,m)=>n+m.primitives.reduce((sum,p)=>sum+gltf.accessors[p.indices].count/3,0),0);assert.equal(triangles,asset.triangles);assert.ok(triangles<(asset.file.startsWith('tree-')?165000:asset.file.startsWith('fence')?2500:45000));assert.ok(gltf.images.length>=(asset.file.startsWith('building-')?1:asset.file.startsWith('fence')?3:6))}}
 for(const asset of JSON.parse(fs.readFileSync('public/assets/outdoor/textures-credits.json'))){assert.equal(asset.license,'CC0-1.0');for(const map of ['color','normal','roughness'])assert.ok(fs.statSync(`public/assets/outdoor/${asset.id}/${map}.jpg`).size>0)}
 assert.ok(fs.readFileSync('src/memory-world.ts','utf8').includes('hinge.rotation.y=0'));
 assert.ok(fs.readFileSync('src/main.ts','utf8').includes("'/street.html'"));assert.ok(fs.readFileSync('vite.config.ts','utf8').includes("street: 'street.html'"));

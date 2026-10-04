@@ -22,13 +22,18 @@ const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.
 // Avoid saturating StandardMaterial's diffuse lighting: too much fill erases pavement shadows.
 const sky=new HemisphericLight('clear blue sky',Vector3.Up(),scene);sky.intensity=.45;sky.diffuse=new Color3(.83,.93,1);sky.groundColor=new Color3(.45,.52,.34);
 const sun=new DirectionalLight('bright afternoon sun',outdoorSunDirection.scale(-1),scene);sun.intensity=1.65;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
-const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.0001;shadow.normalBias=.005;shadow.darkness=.22;
+const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.0005;shadow.normalBias=.02;shadow.darkness=.22;
 createOutdoorSky(scene);
 const lea=new TransformNode('Lea outdoors',scene);lea.position.set(outdoorSpawn.x,.11,outdoorSpawn.z);const controls=createMovementControls(app),quality=createAdaptiveQuality();
 let route:Vector3[]=[],transitioning=false;
 function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.position,p).map(p=>new Vector3(p.x,.11,p.z))}
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null;
 const check=!!checkMode;
+const townOverview=checkMode==='town';
+if(townOverview){scene.fogStart=140;scene.fogEnd=240;homeButton.hidden=true}
+const fenceOverview=checkMode==='fence-white'||checkMode==='fence-wire';
+const overviewHome=checkMode?.startsWith('architecture-')?outdoorHomes.find(h=>h.model===checkMode.slice(-1)&&h.angle===0):fenceOverview?outdoorHomes.find(h=>h.model===(checkMode==='fence-wire'?'b':'a')&&h.angle===0):undefined;
+if(overviewHome)lea.position.set(overviewHome.x,.11,-11);
 if(checkMode==='house-c')lea.position.set(26,.11,-6.3);
 if(checkMode==='house-d')lea.position.set(-52,.11,-6.3);
 if(checkMode==='shadow-road'){lea.position.set(20,.11,-18);lea.rotation.y=Math.PI}
@@ -36,13 +41,13 @@ if(checkMode==='shadow-pavement'){lea.position.set(20,.11,-22.5);lea.rotation.y=
 function returnHome(){if(transitioning||!nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2))return;transitioning=true;route=[];loading.querySelector('strong')!.textContent='Возвращаемся домой…';loading.hidden=false;try{sessionStorage.setItem('logictown-return-home','1')}catch{}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(checkMode==='outdoor'?'/checks/outdoor.html':check?'/checks/house.html':'/')))}
 homeButton.onclick=returnHome;
 const pin=createInteractionMarker(scene,'Вернуться в дом','⌂',new Vector3(outdoorDoor.x,2,outdoorDoor.z),returnHome);
-const walls=outdoorObstacles.filter(o=>o.kind==='house'||o.kind==='fence'||o.kind==='gate').map(o=>({min:new Vector3(o.x-o.w/2,0,o.z-o.d/2),max:new Vector3(o.x+o.w/2,o.kind==='house'?outdoorHomes.find(h=>h.x===o.x&&h.z===o.z)!.h:1.2,o.z+o.d/2)}));
+const walls=outdoorObstacles.filter(o=>o.kind==='house'||o.kind==='fence'||o.kind==='gate').map(o=>({min:new Vector3(o.x-o.w/2,0,o.z-o.d/2),max:new Vector3(o.x+o.w/2,o.kind==='house'?outdoorHomes.find(h=>h.x===o.x&&h.z===o.z)!.h:1.35,o.z+o.d/2)}));
 async function start(){
  const [world,character]=await Promise.all([buildOutdoorWorld(scene,shadow),loadLea(scene,lea,shadow)]);
  const dog=await loadDog(scene,lea,shadow,()=>false,{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
  scene.environmentIntensity=.75;
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
- if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Оштукатуренный дом',26,-6.3],['Дом с верандой',-52,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(x,.11,z));nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
+ if(check&&!overviewHome&&!townOverview){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Дом с широким крыльцом',26,-6.3],['Дом с мансардой',-52,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(x,.11,z));nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
   const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning);let moving=false;
@@ -51,8 +56,11 @@ async function start(){
   character.play(moving?'Walk':'Idle');dog.update(dt,moving,[],false);
   camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
-  sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near;pin.mesh.setEnabled(near);
-  if(check)document.querySelector('#street-status')!.textContent=`Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · FPS ${engine.getFps().toFixed(0)}`;
+  if(overviewHome){camera.target.set(overviewHome.x,3.9,overviewHome.z);camera.alpha=-Math.PI/2;camera.beta=1.47;camera.radius=25}
+  if(fenceOverview&&overviewHome){camera.target.set(overviewHome.x+5,.8,-12);camera.alpha=-Math.PI/2;camera.beta=1.46;camera.radius=6.8}
+  if(townOverview){camera.target.set(0,2,-16);camera.alpha=-Math.PI/2;camera.beta=1.35;camera.radius=84}
+  sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near||townOverview;pin.mesh.setEnabled(near);
+  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · FPS ${engine.getFps().toFixed(0)}`;
   scene.render();
  });
 }
