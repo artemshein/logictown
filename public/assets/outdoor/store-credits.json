@@ -1,0 +1,22 @@
+{
+  "file": "village-store.glb",
+  "title": "Village food market",
+  "author": "Logictown; photographic materials by Rob Tuytel and Dimitrios Savva / Poly Haven",
+  "license": "CC0-1.0",
+  "triangles": 10428,
+  "geometry": "Original exterior following the user reference; available frontier stores and cabins did not match the log facade and projecting entrance.",
+  "textures": [
+    {
+      "source": "https://polyhaven.com/a/wood_planks_grey",
+      "license": "CC0-1.0",
+      "changes": "512px grayscale photographic grain with burgundy or natural wood tint"
+    },
+    {
+      "source": "https://polyhaven.com/a/roof_slates_02",
+      "license": "CC0-1.0",
+      "changes": "512px grayscale photographic slate"
+    }
+  ],
+  "letterFont": "Droid Sans Bold; Android Open Source Project; Apache-2.0; obtained from three.js r180 (examples/fonts/droid/README.txt)",
+  "posters": "Original vector artwork"
+}

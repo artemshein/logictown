@@ -4,7 +4,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {validateBytes} from 'gltf-validator';
 
 const moduleUrl=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
-const {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing,outdoorFenceGroups}=await import(moduleUrl(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
+const {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorFences,outdoorHomes,outdoorTrees,outdoorEntrance,outdoorDoor,outdoorSwing,outdoorFenceGroups}=await import(moduleUrl(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-store-dimensions'",JSON.stringify(new URL('../src/outdoor-store-dimensions.ts',import.meta.url).href)).replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
 const layoutUrl=moduleUrl(fs.readFileSync('src/layout.ts','utf8').replace("'./house-data'",JSON.stringify(new URL('../src/house-data.ts',import.meta.url).href)));
 const {createDogMotion}=await import(moduleUrl(fs.readFileSync('src/dog-motion.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl))));
 const neighbourTargets=outdoorHomes.flatMap(h=>{const facing=h.angle===0?-1:1,front=facing===-1?-12:-24,back=facing===-1?14:-48;return [{x:h.x,z:front-facing},{x:h.x,z:h.z+facing*(h.d/2+1.8)},{x:h.x,z:back+facing*2}]});

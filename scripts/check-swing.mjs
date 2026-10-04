@@ -5,7 +5,7 @@ const url=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s))
 const {createSwingMotion}=await import(url(fs.readFileSync('src/swing-motion.ts','utf8')));
 const motion=createSwingMotion();assert.equal(motion.active,false);assert.equal(motion.update(1),0);motion.start();assert.equal(motion.update(0),0);
 let low=0,high=0;for(let i=0;i<2000;i++){const angle=motion.update(.02);assert.ok(Math.abs(angle)<=.420001);low=Math.min(low,angle);high=Math.max(high,angle)}assert.ok(low<-.4&&high>.4,'swings both ways');motion.stop();assert.equal(motion.active,false);assert.equal(motion.update(.1),0);motion.start();assert.equal(motion.update(0),0,'every restart begins at rest');
-const {outdoorBlocked,outdoorPath,outdoorSpawn}=await import(url(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
+const {outdoorBlocked,outdoorPath,outdoorSpawn}=await import(url(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-store-dimensions'",JSON.stringify(new URL('../src/outdoor-store-dimensions.ts',import.meta.url).href)).replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
 const approach={x:1.4,z:11};assert.equal(outdoorBlocked(approach.x,approach.z),false);const path=outdoorPath(outdoorSpawn,approach);assert.ok(path.length);path.forEach(p=>assert.equal(outdoorBlocked(p.x,p.z),false));
 console.log('Swing: gradual start, bounded oscillation, immediate stop/reset, safe approach reachable from front door.');
 const {NullEngine,Scene,TransformNode,MeshBuilder,Quaternion,Vector3,Matrix}=await import('@babylonjs/core');

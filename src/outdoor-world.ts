@@ -1,7 +1,7 @@
 import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import {createGardenPaint} from './outdoor-colors';
-import {outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
+import {outdoorStore,outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
   const mat=new StandardMaterial('outdoor '+name,scene);mat.specularColor=new Color3(.04,.04,.04);
@@ -26,7 +26,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
  if(outdoorEntrance.x!==0)ground('gate connecting path',outdoorEntrance.x/2,-11,Math.abs(outdoorEntrance.x)+2.2,2.2,.041,paving);
  ground('swing landing',outdoorSwing.x,outdoorSwing.z,5.2,4,.025,paving);
- const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','fence-wire','swing','garden-plant'];
+ const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','fence-wire','swing','garden-plant','village-store'];
  const containers=new Map(await Promise.all(names.map(async name=>[name,await LoadAssetContainerAsync(name==='garden-plant'?'/assets/polyhaven/potted_plant_01.glb':`/assets/outdoor/${name}.glb`,scene)] as const)));
  const templateBounds=new Map<string,{min:Vector3;size:Vector3}>();
  for(const [name,container]of containers){let min=new Vector3(Infinity,Infinity,Infinity),max=min.scale(-1);for(const m of container.meshes){if(!m.getTotalVertices())continue;m.computeWorldMatrix(true);const b=m.getBoundingInfo().boundingBox;min=Vector3.Minimize(min,b.minimumWorld);max=Vector3.Maximize(max,b.maximumWorld)}templateBounds.set(name,{min,size:max.subtract(min)})}
@@ -37,6 +37,8 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   instance.rootNodes.forEach(n=>n.parent=offset);root.position.set(x,.04,z);root.rotation.y=angle;
   const meshes=root.getChildMeshes().filter(m=>m.getTotalVertices());meshes.forEach(m=>{m.receiveShadows=true;if(castShadow)shadow.addShadowCaster(m)});return {root,meshes,animations:instance.animationGroups};
  }
+ place('village-store','village grocery store',outdoorStore.x,outdoorStore.z,outdoorStore.w,outdoorStore.h,outdoorStore.d,outdoorStore.angle);
+ ground('store forecourt',outdoorStore.x,-24.1,22,1.4,.041,paving);
  const gardenPaint=outdoorHomes.map((_,plot)=>createGardenPaint(plot));
  for(const [plot,home] of outdoorHomes.entries()){const house=place('building-type-'+home.model,home.x===0&&home.angle===0?'Lea home':'neighbour house',home.x,home.z,home.w,home.h,home.d,home.angle);gardenPaint[plot](house.meshes)}
  // Garden paths follow each facade; small planters use the existing CC0 plant model.

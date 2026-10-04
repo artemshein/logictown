@@ -4,7 +4,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {validateBytes} from 'gltf-validator';
 const url=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const {createCatMotion}=await import(url(fs.readFileSync('src/cat-motion.ts','utf8')));
-const {outdoorBlocked,outdoorPath}=await import(url(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
+const {outdoorBlocked,outdoorPath}=await import(url(fs.readFileSync('src/outdoor-layout.ts','utf8').replace("'./outdoor-store-dimensions'",JSON.stringify(new URL('../src/outdoor-store-dimensions.ts',import.meta.url).href)).replace("'./outdoor-house-dimensions'",JSON.stringify(new URL('../src/outdoor-house-dimensions.ts',import.meta.url).href))));
 let seed=42;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
 const nav={blocked:outdoorBlocked,path:outdoorPath},start={x:8,z:-13.5};
 for(const [label,speed,direction]of [['stationary',0,1],['slow approach',.7,1],['fast departure',3.8,-1]]){

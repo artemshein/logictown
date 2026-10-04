@@ -1,4 +1,5 @@
 import {outdoorHouseProfiles} from './outdoor-house-dimensions';
+import {outdoorStoreDimensions} from './outdoor-store-dimensions';
 export type OutdoorPoint={x:number;z:number};
 export type OutdoorObstacle={x:number;z:number;w:number;d:number;kind:string};
 export const outdoorSpawn={x:0,z:-6.3};
@@ -6,6 +7,7 @@ export const outdoorSpawn={x:0,z:-6.3};
 export const outdoorHouseDimensions=outdoorHouseProfiles.a;
 export const outdoorEntrance={x:0,z:-5.8};
 export const outdoorDoor={x:0,z:-4.3};
+export const outdoorStore={x:52,z:-32.4,angle:Math.PI,...outdoorStoreDimensions};
 export const outdoorSwing={x:4,z:11};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=outdoorHouseProfiles[h.model as keyof typeof outdoorHouseProfiles];return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});
 export const outdoorTrees=outdoorHomes.flatMap(home=>{
@@ -32,6 +34,7 @@ export const outdoorFenceGroups:OutdoorObstacle[][]=outdoorHomes.map(home=>{
 });
 export const outdoorFences=outdoorFenceGroups.flat();
 export const outdoorObstacles:OutdoorObstacle[]=[
+ {...outdoorStore,kind:'store'},
  ...outdoorHomes.map(h=>({...h,kind:'house'})),...outdoorFences,
  ...outdoorTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),
  {...outdoorSwing,w:4,d:2.7,kind:'swing'},
