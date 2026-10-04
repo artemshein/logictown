@@ -1,5 +1,6 @@
 import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Quaternion, Scene, ShadowGenerator, TransformNode, Vector3, Space, Matrix } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
+import {placePalm} from './arm-grip';
 
 export type LeaClip = 'Idle' | 'Walk' | 'Interact' | 'Celebrate' | 'Sit';
 export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGenerator){
@@ -60,5 +61,13 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
   };
   play('Idle');
   const hipOffset=()=>{const hip=result.transformNodes.find(n=>n.name.includes(':Hips_'))!;hip.computeWorldMatrix(true);return Vector3.TransformCoordinates(hip.getAbsolutePosition(),Matrix.Invert(parent.computeWorldMatrix(true)))};
-  return {hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
+  const gripArms=['Left','Right'].map(side=>{const find=(part:string)=>result.transformNodes.find(n=>n.name.includes(`:${side}${part}_`))!;return {palm:find('HandIndex1'),joints:[find('ForeArm'),find('Arm'),find('Shoulder')]}});
+  let gripErrors=[0,0];
+  const gripSwing=(a:Vector3,b:Vector3)=>{
+    parent.computeWorldMatrix(true);const right=Vector3.TransformNormal(Vector3.Right(),parent.getWorldMatrix()).normalize();
+    const arms=gripArms.map(arm=>{arm.palm.computeWorldMatrix(true);return {...arm,side:Vector3.Dot(arm.palm.getAbsolutePosition().subtract(parent.position),right)}}).sort((a,b)=>a.side-b.side);
+    const targets=[a,b].sort((a,b)=>Vector3.Dot(a.subtract(b),right));
+    gripErrors=arms.map((arm,i)=>placePalm(arm.joints,arm.palm,targets[i]));return gripErrors;
+  };
+  return {get gripError(){return Math.max(...gripErrors)},gripSwing,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
 }

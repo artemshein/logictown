@@ -36,7 +36,7 @@ if(townOverview){scene.fogStart=140;scene.fogEnd=240;homeButton.hidden=true}
 const fenceOverview=checkMode==='fence-white'||checkMode==='fence-wire';
 const overviewHome=checkMode?.startsWith('architecture-')?outdoorHomes.find(h=>h.model===checkMode.slice(-1)&&h.angle===0):fenceOverview?outdoorHomes.find(h=>h.model===(checkMode==='fence-wire'?'b':'a')&&h.angle===0):undefined;
 if(overviewHome)lea.position.set(overviewHome.x,.11,-11);
-if(checkMode==='swing')lea.position.set(1.4,.11,11);
+if(checkMode==='swing'||checkMode==='swing-grip')lea.position.set(1.4,.11,11);
 if(checkMode==='cat'||checkMode==='cat-model')lea.position.set(8,.11,-17.5);
 if(checkMode==='house-c')lea.position.set(26,.11,-6.3);
 if(checkMode==='house-d')lea.position.set(-52,.11,-6.3);
@@ -76,10 +76,10 @@ async function start(){
   if(overviewHome){camera.target.set(overviewHome.x,3.9,overviewHome.z);camera.alpha=-Math.PI/2;camera.beta=1.47;camera.radius=25}
   if(fenceOverview&&overviewHome){camera.target.set(overviewHome.x+5,.8,-12);camera.alpha=-Math.PI/2;camera.beta=1.46;camera.radius=6.8}
   if(checkMode==='cat-model'||checkMode==='cat'){camera.target.set(cat.root.position.x,.35,cat.root.position.z);camera.alpha=-Math.PI/2+.65;camera.beta=1.3;camera.radius=checkMode==='cat-model'?2.2:9}
-  if(ride.active||checkMode==='swing'){camera.target.set(4,1.1,11);camera.alpha=Math.PI/2+.8;camera.beta=1.35;camera.radius=5}
+  if(ride.active||checkMode==='swing'||checkMode==='swing-grip'){camera.target.set(4,1.1,11);camera.alpha=Math.PI/2+.8;camera.beta=1.35;camera.radius=5;if(checkMode==='swing-grip'){camera.target.set(3.15,1,11);camera.radius=2.8}}
   if(townOverview){camera.target.set(0,2,-16);camera.alpha=-Math.PI/2;camera.beta=1.35;camera.radius=84}
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near||townOverview;pin.mesh.setEnabled(near);
-  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · FPS ${engine.getFps().toFixed(0)}`;
+  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · FPS ${engine.getFps().toFixed(0)}`;
   scene.render();
  });
 }

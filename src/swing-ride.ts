@@ -16,6 +16,9 @@ export function createSwingRide(lea:TransformNode,character:Awaited<ReturnType<t
   const matrix=Matrix.FromQuaternionToRef(rotation,Matrix.Identity());
   lea.rotationQuaternion=rotation;
   lea.position.copyFrom(Vector3.TransformCoordinates(seatPoint,hinge.getWorldMatrix()).subtract(Vector3.TransformNormal(hip,matrix)));
+  lea.computeWorldMatrix(true);
+  const grips=[-1,1].map(side=>Vector3.TransformCoordinates(seatPoint.add(new Vector3(side*.234,.48,0)),hinge.getWorldMatrix()));
+  character.gripSwing(grips[0],grips[1]);
  }
  return {get active(){return motion.active},start(){
   if(motion.active)return;exit=lea.position.clone();exitHeading=lea.rotation.y;lea.rotation.y=0;character.play('Sit');hip=character.hipOffset();motion.start();positionRider();

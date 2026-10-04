@@ -13,10 +13,22 @@ const engine=new NullEngine(),scene=new Scene(engine),conversion=new TransformNo
 const hinge=new TransformNode('chain hinge',scene);hinge.parent=conversion;hinge.position.set(3.15,2.455,-11);
 const seat=MeshBuilder.CreateBox('seat',{size:.2},scene);seat.parent=hinge;seat.position.y=-1.955;
 const lea=new TransformNode('rider',scene);lea.position.set(1.4,.11,11);lea.rotation.y=.7;let pose='Idle';
-const character={play:name=>{pose=name},hipOffset:()=>new Vector3(0,.64,0)};
+const character={gripSwing:()=>[],play:name=>{pose=name},hipOffset:()=>new Vector3(0,.64,0)};
 const {createSwingRide}=await import(url(fs.readFileSync('src/swing-ride.ts','utf8').replace("'@babylonjs/core'",JSON.stringify(new URL('../node_modules/@babylonjs/core/index.js',import.meta.url).href)).replace("'./swing-motion'",JSON.stringify(url(fs.readFileSync('src/swing-motion.ts','utf8'))))));
 const ride=createSwingRide(lea,character,hinge,seat);ride.start();assert.equal(pose,'Sit');
 let minZ=Infinity,maxZ=-Infinity;
 for(let i=0;i<350;i++){ride.update(.02);lea.computeWorldMatrix(true);seat.computeWorldMatrix(true);const hip=Vector3.TransformCoordinates(new Vector3(0,.64,0),lea.getWorldMatrix());const seatAnchor=Vector3.TransformCoordinates(new Vector3(0,-1.91,0),hinge.getWorldMatrix());assert.ok(Vector3.Distance(hip,seatAnchor)<.00001,'hips follow seat, including reflected glTF coordinates');const up=Vector3.TransformNormal(Vector3.Up(),lea.getWorldMatrix());assert.ok(up.y>.9,'rider stays upright');minZ=Math.min(minZ,hip.z);maxZ=Math.max(maxZ,hip.z)}assert.ok(maxZ-minZ>1.4,'rider moves with seat');
 ride.stop();assert.equal(pose,'Idle');assert.deepEqual(lea.position.asArray(),[1.4,.11,11]);assert.equal(lea.rotation.y,.7);assert.equal(lea.rotationQuaternion,null);assert.ok(hinge.rotationQuaternion.equals(Quaternion.Identity()));engine.dispose();
 console.log('Swing rider: seated hips remain aligned throughout motion; reflected glTF coordinates preserve upright pose; stop restores safe position and heading.');
+const {placePalm}=await import(url(fs.readFileSync('src/arm-grip.ts','utf8').replace("'@babylonjs/core'",JSON.stringify(new URL('../node_modules/@babylonjs/core/index.js',import.meta.url).href))));
+const gripEngine=new NullEngine(),gripScene=new Scene(gripEngine);
+for(const side of [-1,1]){
+ const shoulder=new TransformNode('shoulder',gripScene);shoulder.position.set(side*.14,.92,0);
+ const arm=new TransformNode('upper arm',gripScene);arm.parent=shoulder;
+ const fore=new TransformNode('forearm',gripScene);fore.parent=arm;fore.position.y=-.15;
+ const palm=new TransformNode('palm',gripScene);palm.parent=fore;palm.position.y=-.2;
+ const target=new Vector3(side*.234,1,.01),length=fore.position.length();
+ for(let i=0;i<5;i++)placePalm([fore,arm,shoulder],palm,target);
+ assert.ok(Vector3.Distance(palm.getAbsolutePosition(),target)<.003,'both palms reach their chains');assert.equal(fore.position.length(),length,'arm bones are not stretched');
+}
+gripEngine.dispose();console.log('Swing grip: both palms reach chain targets without stretching the arm bones.');
