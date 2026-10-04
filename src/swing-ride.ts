@@ -6,7 +6,8 @@ export function createSwingRide(lea:TransformNode,character:Awaited<ReturnType<t
  let exit=lea.position.clone(),exitHeading=0,hip=Vector3.Zero();
  // Seat origin is its centre. Use a local anchor so chains, seat and rider share the pivot.
  seat.computeWorldMatrix(true);
- const seatPoint=Vector3.TransformCoordinates(seat.getAbsolutePosition(),Matrix.Invert(hinge.computeWorldMatrix(true)));seatPoint.y+=.045;
+ const seatPoint=Vector3.TransformCoordinates(seat.getAbsolutePosition(),Matrix.Invert(hinge.computeWorldMatrix(true)));// The hip joint is inside the pelvis, above the seated clothing surface.
+ seatPoint.y+=.145;
  function positionRider(){
   hinge.computeWorldMatrix(true);
   // glTF's reflected coordinate conversion can flip a decomposed quaternion.
@@ -17,7 +18,7 @@ export function createSwingRide(lea:TransformNode,character:Awaited<ReturnType<t
   lea.rotationQuaternion=rotation;
   lea.position.copyFrom(Vector3.TransformCoordinates(seatPoint,hinge.getWorldMatrix()).subtract(Vector3.TransformNormal(hip,matrix)));
   lea.computeWorldMatrix(true);
-  const grips=[-1,1].map(side=>Vector3.TransformCoordinates(seatPoint.add(new Vector3(side*.234,.48,0)),hinge.getWorldMatrix()));
+  const grips=[-1,1].map(side=>Vector3.TransformCoordinates(seatPoint.add(new Vector3(side*.234,.38,0)),hinge.getWorldMatrix()));
   character.gripSwing(grips[0],grips[1]);
  }
  return {get active(){return motion.active},start(){
