@@ -1,5 +1,6 @@
 import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
+import {createGardenPaint} from './outdoor-colors';
 import {outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
@@ -36,7 +37,8 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   instance.rootNodes.forEach(n=>n.parent=offset);root.position.set(x,.04,z);root.rotation.y=angle;
   const meshes=root.getChildMeshes().filter(m=>m.getTotalVertices());meshes.forEach(m=>{m.receiveShadows=true;if(castShadow)shadow.addShadowCaster(m)});return {root,meshes,animations:instance.animationGroups};
  }
- for(const home of outdoorHomes)place('building-type-'+home.model,home.x===0&&home.angle===0?'Lea home':'neighbour house',home.x,home.z,home.w,home.h,home.d,home.angle);
+ const gardenPaint=outdoorHomes.map((_,plot)=>createGardenPaint(plot));
+ for(const [plot,home] of outdoorHomes.entries()){const house=place('building-type-'+home.model,home.x===0&&home.angle===0?'Lea home':'neighbour house',home.x,home.z,home.w,home.h,home.d,home.angle);gardenPaint[plot](house.meshes)}
  // Garden paths follow each facade; small planters use the existing CC0 plant model.
  for(const home of outdoorHomes){
   const facing=home.angle===0?-1:1,doorX=home.x+(home.model==='d'?-2.3:0)*(home.angle===0?1:-1),edge=home.z+facing*home.d/2,gate=home.angle===0?-12:-24;
@@ -57,7 +59,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  }
  for(const [plot,fences]of outdoorFenceGroups.entries()){
   const fenceMeshes:Mesh[]=[],fenceType=plot%3===1?'fence-wire':'fence';
-  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.max(1,Math.round(length/2.8)),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place(fenceType,label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.35,.2,angle);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
+  function fenceLine(x:number,z:number,length:number,angle:number,label:string){const count=Math.max(1,Math.round(length/2.8)),segment=length/count;for(let i=0;i<count;i++){const along=-length/2+segment*(i+.5),p=place(fenceType,label+' '+i,x+Math.cos(angle)*along,z-Math.sin(angle)*along,segment,1.35,.2,angle);gardenPaint[plot](p.meshes);for(const m of p.meshes)if(m instanceof Mesh)fenceMeshes.push(m)}}
   for(const f of fences)fenceLine(f.x,f.z,Math.max(f.w,f.d),f.d>f.w?Math.PI/2:0,`plot ${plot} ${f.kind==='gate'?'open garden gate':'garden fence'}`);
   // Group by material within each plot, preserving both timber and metal wire.
   fenceMeshes.forEach(m=>{m.computeWorldMatrix(true);shadow.removeShadowCaster(m)});
