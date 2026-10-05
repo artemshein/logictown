@@ -17,6 +17,14 @@ for(const target of [...rooms,...rooms.reverse()]){
 }
 assert.ok(walked);assert.ok(seated);
 console.log('Dog follows through all rooms, avoids obstacles and sits beside Lea.');
+const commanded=createDogMotion(companionTarget(rooms[0],0)),destination=rooms[2];
+commanded.update(.02,destination,0,true);commanded.setCommand('sit');const parked={...commanded.position};
+for(let i=0;i<500;i++){const state=commanded.update(.02,destination,0,true);assert.equal(state.sitting,true);assert.equal(state.walked,false);assert.deepEqual(commanded.position,parked,'sit holds position while player moves away')}
+commanded.setCommand('follow');let resumed=false;
+for(let i=0;i<1500;i++){const state=commanded.update(.02,destination,0,false);resumed ||= state.walked;assert.equal(state.sitting,false,'follow does not immediately auto-sit again');assert.equal(dogBlocked(commanded.position.x,commanded.position.z),false)}
+assert.ok(resumed);assert.ok(Math.hypot(commanded.position.x-destination.x,commanded.position.z-destination.z)<1.65,'follow catches up through room passages');
+commanded.setCommand('sit');assert.equal(commanded.update(.02,destination,0,false).sitting,true);
+console.log('Commands: sit cancels movement and holds position; follow resumes safe navigation and keeps dog on its feet.');
 
 const fragmentsUrl=moduleUrl(fs.readFileSync('src/puzzle-fragments.ts','utf8'));
 const {createDogHints}=await import(moduleUrl(fs.readFileSync('src/dog-hints.ts','utf8').replace("'./layout'",JSON.stringify(layoutUrl)).replace("'./puzzle-fragments'",JSON.stringify(fragmentsUrl))));

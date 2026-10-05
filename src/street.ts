@@ -3,6 +3,7 @@ import {buildOutdoorWorld} from './outdoor-world';
 import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorStore,outdoorHomes,outdoorEntrance,outdoorDoor} from './outdoor-layout';
 import {loadLea} from './lea';
 import {loadDog} from './dog';
+import {installDogCommands} from './dog-commands';
 import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
@@ -68,6 +69,7 @@ async function start(){
  window.addEventListener('keydown',cancelRide);
  scene.onDisposeObservable.add(()=>{swingControls.dispose();window.removeEventListener('keydown',cancelRide)});
  const dog=await loadDog(scene,lea,shadow,()=>false,{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
+ const dogCommands=installDogCommands(app,dog);scene.onDisposeObservable.add(()=>dogCommands.dispose());
  const cat=await loadStreetCat(scene,shadow,{path:outdoorPath,blocked:outdoorBlocked});
  if(checkMode==='cat-model')cat.root.rotation.y=Math.PI;
  let catCheckStarted=checkMode!=='cat';
@@ -83,6 +85,7 @@ async function start(){
   swingSound.update(ride.active,ride.angle,dt,Vector3.Distance(lea.position,world.swingHinge.getAbsolutePosition()));
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
   dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
+  dogCommands.update(!transitioning&&!ride.active);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
   if(overviewHome){camera.target.set(overviewHome.x,3.9,overviewHome.z);camera.alpha=-Math.PI/2;camera.beta=1.47;camera.radius=25}

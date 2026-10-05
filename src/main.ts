@@ -1,4 +1,5 @@
 import {loadDog} from './dog';
+import {installDogCommands} from './dog-commands';
 import {installOpenDoors} from './doors';
 import {createAdaptiveQuality} from './render-quality';
 import {readPlayerLocation,savePlayerLocation,installLocationAutosave} from './player-location';
@@ -259,7 +260,9 @@ girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;
 const locationAutosave=installLocationAutosave(()=>({version:2,area:'house',room:currentRoom}),()=>persistLocation&&!resumingStreet&&!leavingHouse);
 locationAutosave.flush();import.meta.hot?.dispose(()=>locationAutosave.dispose());
 let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
-void loadDog(scene,girl,shadow,bark).then(asset=>dog=asset).catch(e=>console.error('Unable to load puppy',e));
+let dogCommands:ReturnType<typeof installDogCommands>|undefined;
+void loadDog(scene,girl,shadow,bark).then(asset=>{dog=asset;dogCommands=installDogCommands($('#app'),asset)}).catch(e=>console.error('Unable to load puppy',e));
+import.meta.hot?.dispose(()=>dogCommands?.dispose());
 const dogCheck=import.meta.env.DEV&&location.pathname==='/checks/dog.html';
 if(dogCheck){
  const panel=document.createElement('nav');panel.style.cssText='position:fixed;top:8px;left:8px;z-index:20;background:#fff8;padding:8px;display:flex;gap:8px;flex-wrap:wrap';
@@ -293,6 +296,7 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
   }
  }
  dog?.update(dt,moving,memory.state.fragments,$('.overlay').hidden);
+ dogCommands?.update($('.overlay').hidden&&!leavingHouse);
  if(dogCheck&&dog)$('#dog-status').textContent=`Щенок ${dog.sitting?'сидит':'идёт / стоит'} · лай: ${dog.barked.join(',')||'нет'} · всего: ${dog.barkCount} · расстояние: ${Vector3.Distance(girl.position,dog.root.position).toFixed(2)}`;
  scene.render();
  locationAutosave.tick(dt);
