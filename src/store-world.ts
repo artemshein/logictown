@@ -1,8 +1,9 @@
 import {Color3,DynamicTexture,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 export const storeExit={x:0,z:-4.1};
+export const cashierPosition={x:-2.85,z:-1.05};
 export const storeFixtures=[{x:3,z:.8,w:4.4,d:.8,h:2.25},{x:3,z:4.45,w:5.3,d:.75,h:2.75},{x:-2.8,z:4.45,w:3.2,d:.75,h:2.45},{x:-5.45,z:1.05,w:.8,d:3.2,h:2.45},{x:-3.7,z:-2.25,w:3.7,d:1.25,h:1.15},{x:5.35,z:-2.6,w:1,d:1.15,h:2.6},{x:-4.6,z:-4.05,w:1.3,d:1.3,h:.9}];
-export function storeBlocked(x:number,z:number){return Math.abs(x)>5.7||Math.abs(z)>4.65||storeFixtures.some(o=>Math.abs(x-o.x)<o.w/2+.28&&Math.abs(z-o.z)<o.d/2+.28)}
+export function storeBlocked(x:number,z:number){return Math.abs(x)>5.7||Math.abs(z)>4.65||Math.hypot(x-cashierPosition.x,z-cashierPosition.z)<.5||storeFixtures.some(o=>Math.abs(x-o.x)<o.w/2+.28&&Math.abs(z-o.z)<o.d/2+.28)}
 export function storePath(from:{x:number;z:number},to:{x:number;z:number}){
  const step=.25,nx=47,nz=39,point=(id:number)=>({x:-5.75+(id%nx)*step,z:-4.75+Math.floor(id/nx)*step});
  const free=Array.from({length:nx*nz},(_,id)=>{const p=point(id);return !storeBlocked(p.x,p.z)});
