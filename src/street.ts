@@ -25,8 +25,10 @@ const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.f
 const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.25,3.8,new Vector3(outdoorSpawn.x,1.1,outdoorSpawn.z),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=3.8;
 const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;boom=aspect<.8?4.2:3.8});
 // Avoid saturating StandardMaterial's diffuse lighting: too much fill erases pavement shadows.
-const sky=new HemisphericLight('clear blue sky',Vector3.Up(),scene);sky.intensity=.45;sky.diffuse=new Color3(.83,.93,1);sky.groundColor=new Color3(.45,.52,.34);
+const sky=new HemisphericLight('clear blue sky',Vector3.Up(),scene);sky.intensity=.45;
 const sun=new DirectionalLight('bright afternoon sun',outdoorSunDirection.scale(-1),scene);sun.intensity=1.65;sun.diffuse=new Color3(1,.96,.84);sun.position.set(12,24,-16);
+// Direct and fill light share a hue: shadows lower brightness without making grass greener.
+sky.diffuse=sun.diffuse.clone();sky.groundColor=sun.diffuse.scale(.45);
 const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.0005;shadow.normalBias=.02;shadow.darkness=.22;
 createOutdoorSky(scene);
 const lea=new TransformNode('Lea outdoors',scene);lea.position.set(outdoorSpawn.x,.11,outdoorSpawn.z);const controls=createMovementControls(app),quality=createAdaptiveQuality();
