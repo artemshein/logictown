@@ -49,13 +49,17 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
  const labels=['МЁД','ВАРЕНЬЕ','ЧАЙ','КОФЕ','МОЛОКО','МУКА','КРУПА','СОК'],colours=['#d3a449','#9b4c52','#719264','#604a35','#789bab','#d2b78b','#be9853','#c17641'];
  const packets=labels.map((label,i)=>{const m=mat('product '+label,colours[i]),t=new DynamicTexture('packaging '+label,{width:128,height:128},scene,false),c=t.getContext() as unknown as CanvasRenderingContext2D;c.fillStyle=colours[i];c.fillRect(0,0,128,128);c.fillStyle='#fff2d6';c.fillRect(6,22,116,70);c.fillStyle=colours[i];c.font='bold 20px sans-serif';c.textAlign='center';c.fillText(label,64,51);c.font='13px sans-serif';c.fillText('Тихий город',64,76);c.fillStyle='#fff2d6';c.fillRect(12,103,104,3);t.update();m.diffuseTexture=t;m.diffuseColor=Color3.White();return m});
  const lid=mat('jar metal lids','#c6b695'),cream=mat('price paper','#fff6df');
- const priceTexture=new DynamicTexture('shelf price tickets',{width:256,height:64},scene,false);priceTexture.drawText('89 ₽  ·  120 ₽  ·  65 ₽',null,43,'bold 23px sans-serif','#423624','#fff6df',true);cream.diffuseTexture=priceTexture;
+ // Each ticket has the same 4:1 aspect ratio in pixels and in the scene.
+ const prices=[89,120,65,149,99,79,110,59];
+ const priceCards=prices.map(price=>{const m=mat('price ticket '+price,'#ffffff'),t=new DynamicTexture('price '+price,{width:512,height:128},scene,false),c=t.getContext() as unknown as CanvasRenderingContext2D;c.fillStyle='#fff6df';c.fillRect(0,0,512,128);c.strokeStyle='#d4c6a6';c.lineWidth=4;c.strokeRect(2,2,508,124);c.fillStyle='#423624';c.font='bold 76px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(price+' ₽',256,66);t.update();m.diffuseTexture=t;m.emissiveColor=new Color3(.12,.12,.12);return m});
  function shelf(x:number,z:number,w:number,h:number,angle=0,bars=false){
   const root=new TransformNode('stocked wooden shelving',scene),start=solids.length,startGoods=goods.length,startProducts=productRoots.length;
   box('shelf oak backing',0,h/2,.3,w,h,.07,oak);for(const side of [-1,1])box('shelf solid oak upright',side*(w/2-.06),h/2,0,.12,h,.75,oak);
   for(let row=0;row<5;row++){const y=.15+row*(h-.4)/4;box('solid wooden shelf',0,y,0,w,.08,.75,oak);box('price strip',0,y-.015,-.39,w-.2,.09,.015,cream);
    // Keep the top display shelf free so pots do not intersect the stock.
    if(row===4)continue;
+   const snackRow=bars&&(row===1||row===3),spacing=snackRow ? .3 : .24,count=Math.floor((w-(snackRow ? .4 : .25))/spacing);
+   for(let col=0;col<count;col++){const priceIndex=snackRow?(col+row)%4:(col+row*3)%packets.length;box('individual price ticket',-w/2+(snackRow ? .27 : .22)+col*spacing,y-.015,-.401,.216,.054,.004,priceCards[priceIndex]);}
    if(bars&&(row===1||row===3)){
     const count=Math.floor((w-.4)/.3);
     for(let col=0;col<count;col++)for(let depth=0;depth<3;depth++)product('bar',-w/2+.27+col*.3,y+.04,-.24+depth*.18,col+row+depth);

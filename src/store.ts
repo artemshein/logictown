@@ -41,6 +41,7 @@ async function start(){
   if(checkMode==='fixtures'){camera.target.set(-4,1.25,2.8);camera.alpha=-Math.PI/2+.5;camera.beta=1.3;camera.radius=4.5}
   if(checkMode==='fridge'){camera.target.set(5,1.25,-2.6);camera.alpha=Math.PI;camera.beta=1.3;camera.radius=3.3}
   if(checkMode==='products'){camera.target.set(2.5,1.05,.8);camera.alpha=-Math.PI/2+.35;camera.beta=1.3;camera.radius=2.8}
+  if(checkMode==='prices'){camera.target.set(-2.8,1.2,4.45);camera.alpha=-Math.PI/2;camera.beta=1.35;camera.radius=2.5}
   if(checkMode==='cashier'){camera.target.set(-2.85,1.35,-1.05);camera.alpha=-Math.PI/2;camera.beta=1.4;camera.radius=2.5}
   if(checkMode==='cashier-side'){camera.target.set(-2.85,1.05,-1.05);camera.alpha=-.7;camera.beta=1.3;camera.radius=2.8}
   if(checkMode==='cashier-back'){camera.target.set(-2.85,1.05,-1.05);camera.alpha=Math.PI/2;camera.beta=1.3;camera.radius=2.4}
