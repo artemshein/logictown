@@ -1,6 +1,7 @@
 import {loadDog} from './dog';
 import {installOpenDoors} from './doors';
 import {createAdaptiveQuality} from './render-quality';
+import {readPlayerLocation,savePlayerLocation,installLocationAutosave} from './player-location';
 import {installFurnishings} from './furnishings';
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
@@ -23,6 +24,11 @@ const interiorCheck=import.meta.env.DEV&&['/checks/interior.html','/checks/dog.h
 const outdoorCheck=import.meta.env.DEV&&location.pathname==='/checks/outdoor.html';
 const memoryCheck=import.meta.env.DEV&&['/checks/house.html','/checks/outdoor.html'].includes(location.pathname);
 const roomStorageKey=memoryCheck||interiorCheck?'logictown-memory-check-room':'logictown-room';
+const persistLocation=!location.pathname.startsWith('/checks/');
+let returningHome=false;try{returningHome=sessionStorage.getItem('logictown-return-home')==='1';sessionStorage.removeItem('logictown-return-home')}catch{}
+const previousLocation=persistLocation?readPlayerLocation():undefined;
+const resumingStreet=!returningHome&&previousLocation?.area==='street';
+if(resumingStreet)location.replace('/street.html');
 let saved:{clue?:boolean;solved?:boolean}={};
 try{saved=JSON.parse(localStorage.getItem('logictown-v1')||'{}')}catch{}
 let clue=!!saved.clue, solved=!!saved.solved;
@@ -202,6 +208,7 @@ $('#sound').onclick=()=>{unlockSound();sound=!sound;$('#sound').textContent=soun
 let memoryObjects:ReturnType<typeof installMemoryObjects>|undefined;
 const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAction('Celebrate'),changed:()=>memoryObjects?.sync(),exit:()=>{
  leavingHouse=true;marker.isVisible=false;route=[];arrival=null;memoryObjects?.sync();
+ if(persistLocation)savePlayerLocation({version:1,area:'street',x:0,z:-6.3,heading:0});
  $('.loading span').textContent='Выходим на улицу…';$('.loading').hidden=false;
  requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(outdoorCheck?'/street.html?check=outdoor':memoryCheck?'/street.html?check=1':'/street.html')));
 
@@ -246,8 +253,15 @@ if(memoryCheck)initialRoom='hall';
 if(interiorCheck){const id=new URLSearchParams(location.search).get('room');initialRoom=id&&id in roomInfo?id as RoomId:'bedroom'}
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
-try{if(sessionStorage.getItem('logictown-return-home')){sessionStorage.removeItem('logictown-return-home');initialRoom='hall';girl.position.set(18.8,.11,-5.1)}}catch{}
+if(returningHome){initialRoom='hall';girl.position.set(18.8,.11,-5.1)}
 girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
+if(!returningHome&&previousLocation?.area==='house'&&!houseBlocked(previousLocation.x,previousLocation.z)){
+ girl.position.set(previousLocation.x,.11,previousLocation.z);girl.rotation.y=previousLocation.heading;
+ initialRoom=roomAt(previousLocation.x,previousLocation.z)!;switchRoom(initialRoom);
+ camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);
+}
+const locationAutosave=installLocationAutosave(()=>({version:1,area:'house',x:girl.position.x,z:girl.position.z,heading:girl.rotation.y}),()=>persistLocation&&!resumingStreet&&!leavingHouse);
+locationAutosave.flush();import.meta.hot?.dispose(()=>locationAutosave.dispose());
 let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
 void loadDog(scene,girl,shadow,bark).then(asset=>dog=asset).catch(e=>console.error('Unable to load puppy',e));
 const dogCheck=import.meta.env.DEV&&location.pathname==='/checks/dog.html';
@@ -285,6 +299,7 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
  dog?.update(dt,moving,memory.state.fragments,$('.overlay').hidden);
  if(dogCheck&&dog)$('#dog-status').textContent=`Щенок ${dog.sitting?'сидит':'идёт / стоит'} · лай: ${dog.barked.join(',')||'нет'} · всего: ${dog.barkCount} · расстояние: ${Vector3.Distance(girl.position,dog.root.position).toFixed(2)}`;
  scene.render();
+ locationAutosave.tick(dt);
 });
 
 

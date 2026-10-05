@@ -7,6 +7,7 @@ import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
 import {createSwingControls} from './swing-controls';
+import {readPlayerLocation,savePlayerLocation,installLocationAutosave} from './player-location';
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
 import {createViewportSync} from './viewport';
@@ -33,6 +34,12 @@ let route:Vector3[]=[],transitioning=false;
 function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.position,p).map(p=>new Vector3(p.x,.11,p.z))}
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null;
 const check=!!checkMode;
+const persistLocation=!check;
+const previousLocation=persistLocation?readPlayerLocation():undefined;
+if(previousLocation?.area==='street'&&!outdoorBlocked(previousLocation.x,previousLocation.z)){
+ lea.position.set(previousLocation.x,.11,previousLocation.z);lea.rotation.y=previousLocation.heading;
+ camera.alpha=-Math.PI/2-lea.rotation.y;camera.target.set(lea.position.x,1.1,lea.position.z);
+}
 const townOverview=checkMode==='town';
 if(townOverview){scene.fogStart=140;scene.fogEnd=240;homeButton.hidden=true}
 const fenceOverview=checkMode==='fence-white'||checkMode==='fence-wire';
@@ -45,13 +52,15 @@ if(checkMode==='house-c')lea.position.set(26,.11,-6.3);
 if(checkMode==='house-d')lea.position.set(-52,.11,-6.3);
 if(checkMode==='shadow-road'){lea.position.set(20,.11,-18);lea.rotation.y=Math.PI}
 if(checkMode==='shadow-pavement'){lea.position.set(20,.11,-22.5);lea.rotation.y=Math.PI}
-function returnHome(){if(transitioning||!nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2))return;transitioning=true;route=[];loading.querySelector('strong')!.textContent='Возвращаемся домой…';loading.hidden=false;try{sessionStorage.setItem('logictown-return-home','1')}catch{}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(checkMode==='outdoor'?'/checks/outdoor.html':check?'/checks/house.html':'/')))}
+function returnHome(){if(transitioning||!nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2))return;transitioning=true;route=[];loading.querySelector('strong')!.textContent='Возвращаемся домой…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:1,area:'house',x:18.8,z:-5.1,heading:Math.PI/2});try{sessionStorage.setItem('logictown-return-home','1')}catch{}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(checkMode==='outdoor'?'/checks/outdoor.html':check?'/checks/house.html':'/')))}
 homeButton.onclick=returnHome;
 const pin=createInteractionMarker(scene,'Вернуться в дом','⌂',new Vector3(outdoorDoor.x,2,outdoorDoor.z),returnHome);
 const walls=outdoorObstacles.filter(o=>o.kind==='house'||o.kind==='store'||o.kind==='fence'||o.kind==='gate').map(o=>({min:new Vector3(o.x-o.w/2,0,o.z-o.d/2),max:new Vector3(o.x+o.w/2,o.kind==='store'?outdoorStore.h:o.kind==='house'?outdoorHomes.find(h=>h.x===o.x&&h.z===o.z)!.h:1.35,o.z+o.d/2)}));
 async function start(){
  const [world,character]=await Promise.all([buildOutdoorWorld(scene,shadow),loadLea(scene,lea,shadow)]);
  const ride=createSwingRide(lea,character,world.swingHinge,world.swingSeat);
+ const locationAutosave=installLocationAutosave(()=>({version:1,area:'street',x:ride.safePosition.x,z:ride.safePosition.z,heading:ride.safeHeading}),()=>persistLocation&&!transitioning);
+ locationAutosave.flush();scene.onDisposeObservable.add(()=>locationAutosave.dispose());
  const swingSound=createSwingSound();scene.onDisposeObservable.add(()=>swingSound.dispose());
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
  const swingControls=createSwingControls(app);
@@ -88,6 +97,7 @@ async function start(){
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near||townOverview;pin.mesh.setEnabled(near);
   if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · FPS ${engine.getFps().toFixed(0)}`;
   scene.render();
+  locationAutosave.tick(dt);
  });
 }
 void start().catch(error=>{console.error(error);loading.querySelector('strong')!.textContent='Не удалось загрузить улицу';loading.querySelector('span')!.innerHTML='<button class="primary" id="street-retry">Попробовать снова</button> <a href="/">Вернуться в дом</a>';document.querySelector('#street-retry')!.addEventListener('click',()=>location.reload())});

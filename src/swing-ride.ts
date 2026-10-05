@@ -22,7 +22,7 @@ export function createSwingRide(lea:TransformNode,character:Awaited<ReturnType<t
   const grips=[-1,1].map(side=>Vector3.TransformCoordinates(seatPoint.add(new Vector3(side*.234,.38,0)),hinge.getWorldMatrix()));
   character.gripSwing(grips[0],grips[1]);
  }
- return {get active(){return motion.active},get angle(){return angle},get amplitude(){return motion.amplitude},get direction(){return motion.direction},get feedback(){return motion.feedback},get won(){return motion.won},start(){
+ return {get active(){return motion.active},get safePosition(){return motion.active?exit:lea.position},get safeHeading(){return motion.active?exitHeading:lea.rotation.y},get angle(){return angle},get amplitude(){return motion.amplitude},get direction(){return motion.direction},get feedback(){return motion.feedback},get won(){return motion.won},start(){
   if(motion.active)return;exit=lea.position.clone();exitHeading=lea.rotation.y;lea.rotation.y=0;character.play('Sit');hip=character.hipOffset();motion.start();positionRider();
  },stop(){
   if(!motion.active)return;motion.stop();angle=lean=0;hinge.rotationQuaternion=rest.clone();lea.rotationQuaternion=null;lea.rotation.set(0,exitHeading,0);lea.position.copyFrom(exit);character.play('Idle');
