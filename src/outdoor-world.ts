@@ -1,4 +1,4 @@
-import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,type Scene,type ShadowGenerator} from '@babylonjs/core';
+import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,VertexBuffer,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import {createGardenPaint} from './outdoor-colors';
 import {outdoorStore,outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
@@ -10,9 +10,9 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   return mat;
  };
  const grass=texture('grass_ground'),asphalt=texture('asphalt_01'),paving=texture('pavement_01');
- // Keep the photographed grass colour. A green material tint was hidden by
- // lighting clamping in sunlight but became fully visible inside shadows.
- grass.diffuseColor=Color3.White();grass.diffuseTexture!.level=1;
+ // Apply the meadow tint to the surface colour, before lighting is clamped.
+ // Material diffuse tint is clamped with light and changes hue in shadows.
+ grass.diffuseColor=Color3.White();grass.diffuseTexture!.level=1.2;
  grass.specularColor=Color3.Black();
  const floors:Mesh[]=[];
  function ground(name:string,x:number,z:number,w:number,d:number,y:number,material:StandardMaterial){
@@ -22,6 +22,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  }
  // Keep distant grass green: blue scene fog otherwise creates a false sky gap below the hills.
  const lawn=ground('neighbourhood lawn',0,-16,500,500,-.01,grass);lawn.applyFog=false;
+ lawn.setVerticesData(VertexBuffer.ColorKind,Array.from({length:lawn.getTotalVertices()},()=>[.58,.92,.68,1]).flat());
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
