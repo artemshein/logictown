@@ -63,33 +63,55 @@ function buildWaterSpray(scene:Scene){
 /** Flower beds by the front door, a can to find, and a five-second watering. */
 export function createGardenWatering(scene:Scene,shadow:ShadowGenerator,lea:TransformNode,character:Lea,beds:Bed[],canSpot:{x:number;z:number},say:(text:string)=>void){
  const flowers=buildFlowerBeds(scene,shadow,beds),can=buildWateringCan(scene,shadow),{spray,dispose:disposeSpray}=buildWaterSpray(scene);
- let carried=false;try{carried=localStorage.getItem(CAN_KEY)==='carried'}catch{}
- let pouring=false,watering=-1,bed:Bed|undefined,wet=0,waterings=0;const startHand=new Vector3();
- const groundPose=()=>{can.root.position.set(canSpot.x,.29,canSpot.z);can.root.rotation.set(0,.7,0)};
+ // Stored as 'carried' or the spot where the can was put down.
+ let carried=false,spot={x:canSpot.x,z:canSpot.z,r:.7};
+ try{const saved=localStorage.getItem(CAN_KEY);if(saved==='carried')carried=true;else if(saved){const s=JSON.parse(saved);if(Number.isFinite(s?.x)&&Number.isFinite(s?.z))spot={x:s.x,z:s.z,r:Number(s.r)||0}}}catch{}
+ const save=()=>{try{localStorage.setItem(CAN_KEY,carried?'carried':JSON.stringify(spot))}catch{}};
+ let pouring=false,watering=-1,wet=0,waterings=0;
+ // The current watering: how long it lasts, whether it wets the beds, and what follows.
+ let job:{duration:number;soil:boolean;done:()=>void}|undefined;const startHand=new Vector3();
+ const groundPose=()=>{can.root.position.set(spot.x,.29,spot.z);can.root.rotation.set(0,spot.r,0)};
  if(!carried)groundPose();
- const pickupButton=button('Взять лейку'),waterButton=button('Полить цветы');
+ const pickupButton=button('Взять лейку'),waterButton=button('Полить цветы'),putButton=button('Поставить лейку');let putOffer=0;
  function button(text:string){const b=document.createElement('button');b.className='street-swing';b.textContent=text;b.hidden=true;document.querySelector('#app')!.append(b);return b}
- const nearCan=()=>!carried&&Math.hypot(lea.position.x-canSpot.x,lea.position.z-canSpot.z)<1.7;
+ const nearCan=()=>!carried&&Math.hypot(lea.position.x-spot.x,lea.position.z-spot.z)<1.7;
  const nearBed=()=>beds.find(b=>Math.hypot(Math.max(0,Math.abs(lea.position.x-b.x)-b.w/2),Math.max(0,Math.abs(lea.position.z-b.z)-b.d/2))<1.1);
- function pickUp(){if(!nearCan()||watering>=0)return false;carried=true;try{localStorage.setItem(CAN_KEY,'carried')}catch{}say('Лейка у тебя. Теперь можно полить цветы у дома.');return true}
+ function pickUp(){if(!nearCan()||watering>=0)return false;carried=true;save();say('Лейка у тебя. Теперь можно полить цветы у дома.');return true}
  can.meshes.forEach(m=>{m.isPickable=true;m.metadata={interaction:()=>{if(!carried)pickUp()}}});
  function water(){
   if(watering>=0)return false;const target=nearBed();if(!target)return false;
   if(!carried){say('Найди лейку');return false}
-  bed=target;watering=0;character.play('Idle');
   // Stand facing the nearest part of the bed.
-  const fx=Math.max(target.x-target.w/2+.3,Math.min(target.x+target.w/2-.3,lea.position.x));lea.rotation.y=Math.atan2(fx-lea.position.x,target.z-lea.position.z);lea.computeWorldMatrix(true);
+  const fx=Math.max(target.x-target.w/2+.3,Math.min(target.x+target.w/2-.3,lea.position.x));
+  return begin({x:fx,z:target.z},{duration:wateringDuration,soil:true,done:()=>{waterings++;say('Цветы политы!')}});
+ }
+ function begin(towards:{x:number;z:number},next:NonNullable<typeof job>){
+  job=next;watering=0;character.play('Idle');
+  lea.rotation.y=Math.atan2(towards.x-lea.position.x,towards.z-lea.position.z);lea.computeWorldMatrix(true);
   startHand.copyFrom(character.palm('Right'));
   return true;
  }
- pickupButton.onclick=()=>{pickUp()};waterButton.onclick=()=>{water()};
+ /** Water something other than the beds (e.g. the cat) for `duration` seconds. */
+ function waterAt(towards:{x:number;z:number},duration:number,done:()=>void){
+  if(watering>=0||!carried)return false;
+  return begin(towards,{duration,soil:false,done});
+ }
+ // Tapping Lea while she holds the can offers to put it down beside her.
+ const body=MeshBuilder.CreateCapsule('Lea tap area',{height:1.25,radius:.3},scene);body.parent=lea;body.position.y=.62;body.visibility=0;body.isPickable=true;
+ body.metadata={interaction:()=>{if(carried&&watering<0)putOffer=5}};
+ function putDown(){
+  if(!carried||watering>=0)return false;
+  const p=lea.position.add(right().scale(.38)).add(forward().scale(.22));
+  carried=false;putOffer=0;spot={x:p.x,z:p.z,r:heading()};save();groundPose();return true;
+ }
+ pickupButton.onclick=()=>{pickUp()};waterButton.onclick=()=>{water()};putButton.onclick=()=>{putDown()};
  const heading=()=>lea.rotation.y,forward=()=>new Vector3(Math.sin(heading()),0,Math.cos(heading())),right=()=>new Vector3(Math.cos(heading()),0,-Math.sin(heading()));
  // The can hangs from the right hand when carried; while watering, the hand
  // follows the can along a raised, tilted pouring path.
  function carryPose(){const p=character.palm('Right').addInPlace(right().scale(.03));can.root.position.set(p.x,p.y-.02,p.z);can.root.rotation.set(0,heading(),0)}
- function pourPose(t:number){
-  const lift=ease(t/.8)*(1-ease((t-(wateringDuration-.8))/.8)),sweep=Math.sin(Math.max(0,t-.8)*1.6)*.28*lift;
-  const anchor=lea.position.add(forward().scale(.4)).add(right().scale(.22)).addInPlaceFromFloats(0,.8,0);
+ function pourPose(t:number,duration:number){
+  const lift=ease(t/.8)*(1-ease((t-(duration-.8))/.8)),sweep=Math.sin(Math.max(0,t-.8)*1.6)*.28*lift;
+  const anchor=lea.position.add(forward().scale(.25)).add(right().scale(.21)).addInPlaceFromFloats(0,.8,0);
   // Start from the hanging hand, rise to the pour, then lower again.
   Vector3.LerpToRef(startHand,anchor,lift,can.root.position);
   can.root.rotation.set(.95*lift,heading()+sweep,0);
@@ -98,20 +120,21 @@ export function createGardenWatering(scene:Scene,shadow:ShadowGenerator,lea:Tran
  }
  function update(dt:number,active:boolean){
   if(watering>=0){
-   watering+=dt;const lift=pourPose(Math.min(watering,wateringDuration));
+   const duration=job?.duration??wateringDuration;watering+=dt;const lift=pourPose(Math.min(watering,duration),duration);
    can.root.computeWorldMatrix(true);
-   if(lift>.85){if(!pouring){pouring=true;spray.start()}can.nozzle.computeWorldMatrix(true);(spray.emitter as Vector3).copyFrom(can.nozzle.getAbsolutePosition());const d=can.direction();spray.direction1=d.add(new Vector3(-.15,-.1,-.15));spray.direction2=d.add(new Vector3(.15,.1,.15));wet=Math.min(1,wet+dt*.4)}
+   if(lift>.85){if(!pouring){pouring=true;spray.start()}can.nozzle.computeWorldMatrix(true);(spray.emitter as Vector3).copyFrom(can.nozzle.getAbsolutePosition());const d=can.direction();spray.direction1=d.add(new Vector3(-.15,-.1,-.15));spray.direction2=d.add(new Vector3(.15,.1,.15));if(job?.soil)wet=Math.min(1,wet+dt*.4)}
    else if(pouring){pouring=false;spray.stop()}
-   if(watering>=wateringDuration){watering=-1;bed=undefined;pouring=false;spray.stop();character.relax();waterings++;say('Цветы политы!')}
+   if(watering>=duration){const finished=job;watering=-1;job=undefined;pouring=false;spray.stop();character.relax();finished?.done()}
   }else{
    wet=Math.max(0,wet-dt/90);
    if(carried)carryPose();
   }
   flowers.setWet(wet);
+  putOffer=Math.max(0,putOffer-dt);if(!carried||watering>=0||!active)putOffer=0;putButton.hidden=putOffer<=0;
   pickupButton.hidden=!active||!nearCan();
-  waterButton.hidden=!active||watering>=0||!nearBed();
+  waterButton.hidden=!active||watering>=0||putOffer>0||!nearBed();
  }
- return {update,pickUp,water,get busy(){return watering>=0},get carried(){return carried},get wateringTime(){return Math.max(0,watering)},get waterings(){return waterings},get spraying(){return pouring},
-  reset(){carried=false;try{localStorage.removeItem(CAN_KEY)}catch{}groundPose()},
-  dispose(){flowers.dispose();can.dispose();disposeSpray();pickupButton.remove();waterButton.remove()}};
+ return {update,pickUp,water,waterAt,putDown,offerPutDown(){if(carried&&watering<0)putOffer=5},get canSpot(){return {...spot}},get busy(){return watering>=0},get carried(){return carried},get wateringTime(){return Math.max(0,watering)},get waterings(){return waterings},get spraying(){return pouring},
+  reset(){carried=false;spot={x:canSpot.x,z:canSpot.z,r:.7};try{localStorage.removeItem(CAN_KEY)}catch{}groundPose()},
+  dispose(){flowers.dispose();can.dispose();disposeSpray();pickupButton.remove();waterButton.remove();putButton.remove();body.dispose()}};
 }

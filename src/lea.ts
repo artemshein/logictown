@@ -1,6 +1,6 @@
 import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Quaternion, Scene, ShadowGenerator, TransformNode, Vector3, Space, Matrix } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import {placePalm} from './arm-grip';
+import {placePalm,reachArm} from './arm-grip';
 
 export type LeaClip = 'Idle' | 'Walk' | 'Interact' | 'Celebrate' | 'Sit';
 export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGenerator){
@@ -69,9 +69,16 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
     const targets=[a,b].sort((a,b)=>Vector3.Dot(a.subtract(b),right));
     gripErrors=arms.map((arm,i)=>placePalm(arm.joints,arm.palm,targets[i]));return gripErrors;
   };
-  const reach=(side:'Left'|'Right',target:Vector3)=>{const arm=gripArms[side==='Left'?0:1];return placePalm(arm.joints,arm.palm,target)};
+  // Bend the elbow down and outward, away from the body, while reaching.
+  const reach=(side:'Left'|'Right',target:Vector3)=>{
+    const arm=gripArms[side==='Left'?0:1],world=parent.computeWorldMatrix(true);
+    const right=Vector3.TransformNormal(Vector3.Right(),world).normalize(),forward=Vector3.TransformNormal(Vector3.Forward(),world).normalize();
+    const pole=new Vector3(0,-1,0).addInPlace(right.scale(side==='Right'?.7:-.7)).addInPlace(forward.scale(-.25));
+    return reachArm(arm.joints[1],arm.joints[0],arm.palm,target,pole);
+  };
+  const armPoints=(side:'Left'|'Right')=>{const arm=gripArms[side==='Left'?0:1];return [arm.joints[1],arm.joints[0],arm.palm].map(n=>{n.computeWorldMatrix(true);return n.getAbsolutePosition().clone()})};
   const palm=(side:'Left'|'Right')=>{const p=gripArms[side==='Left'?0:1].palm;p.computeWorldMatrix(true);return p.getAbsolutePosition().clone()};
   // Return to the base pose of the current clip after scripted reaching.
   const relax=()=>{const clip=active;active=undefined;if(clip)play(clip)};
-  return {get gripError(){return Math.max(...gripErrors)},gripSwing,reach,palm,relax,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
+  return {get gripError(){return Math.max(...gripErrors)},gripSwing,reach,palm,relax,armPoints,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
 }

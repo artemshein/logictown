@@ -87,7 +87,7 @@ async function start(){
  if(checkMode==='wind'){const nav=document.createElement('div');nav.className='street-check';nav.style.top='auto';nav.style.bottom='150px';const button=document.createElement('button');button.textContent='Проверить ветер';button.onclick=()=>{void windSound.preview()};const status=document.createElement('output');status.id='wind-status';nav.append(button,status);app.append(nav);scene.onBeforeRenderObservable.add(()=>status.textContent=windSound.status());}
  const leaves=createFallingLeaves(scene,outdoorBlocked,48,checkMode==='leaves');if(checkMode==='leaves')Object.assign(window,{leavesCheck:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)leaves.update(.04,lea.position,lea.rotation.y);return leaves.flying}});scene.onDisposeObservable.add(()=>leaves.dispose());
  const garden=createGardenWatering(scene,shadow,lea,character,outdoorFlowerBeds,outdoorWateringCan,say);scene.onDisposeObservable.add(()=>garden.dispose());
- if(checkMode==='garden'||checkMode==='watering-can')Object.assign(window,{gardenCheck:garden,gardenStep:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)garden.update(.04,true);return garden.wateringTime}});
+ if(checkMode==='garden'||checkMode==='watering-can')Object.assign(window,{leaCheck:{character,lea},gardenCheck:garden,gardenStep:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)garden.update(.04,true);return garden.wateringTime}});
  const knocks=createDoorKnocks(outdoorNeighbourDoors,lea);scene.onDisposeObservable.add(()=>knocks.dispose());
  if(checkMode==='knock')Object.assign(window,{knockCheck:knocks});
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
@@ -129,6 +129,9 @@ async function start(){
   if(townOverview){camera.target.set(0,2,-16);camera.alpha=-Math.PI/2;camera.beta=1.35;camera.radius=84}
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near||townOverview;pin.mesh.setEnabled(near);
   if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · листьев в воздухе ${leaves.flying} · лейка ${garden.carried?'в руке':'не взята'}${garden.busy?' · поливаем '+garden.wateringTime.toFixed(1)+' с':''} · поливов ${garden.waterings} · стуков ${knocks.count} · FPS ${engine.getFps().toFixed(0)}`;
+  // Several actions can apply at once (e.g. water flowers and pick up the can): stack them.
+  let shownActions=0;app.querySelectorAll<HTMLButtonElement>('.street-swing').forEach(b=>{if(!b.hidden)b.style.bottom=`${24+64*shownActions++}px`});
+  toast.style.bottom=shownActions?`${32+64*shownActions}px`:'';
   scene.render();
   locationAutosave.tick(dt);
  });
