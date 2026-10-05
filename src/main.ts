@@ -262,7 +262,7 @@ const locationAutosave=installLocationAutosave(()=>({version:2,area:'house',room
 locationAutosave.flush();import.meta.hot?.dispose(()=>locationAutosave.dispose());
 let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
 let dogCommands:ReturnType<typeof installDogCommands>|undefined;
-void loadDog(scene,girl,shadow,bark).then(asset=>{dog=asset;dogCommands=installDogCommands($('#app'),asset)}).catch(e=>console.error('Unable to load puppy',e));
+void loadDog(scene,girl,shadow,bark).then(asset=>{dog=asset;dogCommands=installDogCommands($('#app'),asset,()=>sound)}).catch(e=>console.error('Unable to load puppy',e));
 import.meta.hot?.dispose(()=>dogCommands?.dispose());
 const dogCheck=import.meta.env.DEV&&location.pathname==='/checks/dog.html';
 if(dogCheck){
