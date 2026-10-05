@@ -56,7 +56,8 @@ function place(t:number){
 async function start(){
  await buildOutdoorWorld(scene,shadow);
  place(0);await scene.whenReadyAsync();loading.hidden=true;
- await sound.unlock();if(!sound.running)hint.textContent='Потяни экран или нажми стрелки, чтобы посмотреть в окно. Нажми, чтобы включить звук.';
+ // Firefox keeps resume() pending until a gesture: never let audio hold up the ride.
+ await Promise.race([sound.unlock(),new Promise(r=>setTimeout(r,300))]);if(!sound.running)hint.textContent='Потяни экран или нажми стрелки, чтобы посмотреть в окно. Нажми, чтобы включить звук.';
  hint.classList.add('visible');setTimeout(()=>hint.classList.remove('visible'),4500);
  if(check)Object.assign(window,{busCheck:{get time(){return time},get x(){return bus.root.position.x},look,skip(t:number){time=t}}});
  engine.runRenderLoop(()=>{
