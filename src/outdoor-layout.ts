@@ -15,6 +15,8 @@ export const outdoorWateringCan={x:-24.5,z:9.6};
 // The bus shelter faces the road at the western end of the village, opposite the store.
 export const outdoorBusStop={x:-46,z:-25.7,w:4.6,d:2.6};
 export const outdoorBusApproach={x:-46,z:-23.3};
+// A spilt tin of red paint on the pavement in front of the wide-porch house.
+export const outdoorPaintPuddle={x:23.4,z:-13.3,r:.62};
 // Eastbound lane: the bus runs from the shelter past the houses to the store.
 export const outdoorBusRoute={z:-19.4,from:-46,to:52};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=outdoorHouseProfiles[h.model as keyof typeof outdoorHouseProfiles];return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});

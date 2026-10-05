@@ -1,6 +1,6 @@
 import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
-import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorStore,outdoorHomes,outdoorEntrance,outdoorDoor,outdoorFlowerBeds,outdoorWateringCan,outdoorNeighbourDoors,outdoorBusStop,outdoorBusApproach} from './outdoor-layout';
+import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorStore,outdoorHomes,outdoorEntrance,outdoorDoor,outdoorFlowerBeds,outdoorWateringCan,outdoorNeighbourDoors,outdoorBusStop,outdoorBusApproach,outdoorPaintPuddle} from './outdoor-layout';
 import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
@@ -12,6 +12,7 @@ import {createFallingLeaves} from './falling-leaves';
 import {createGardenWatering} from './garden-watering';
 import {createDoorKnocks} from './door-knock';
 import {createCatHissSound,catHissDuration} from './cat-hiss-sound';
+import {createPaintPuddle} from './paint-puddle';
 import {createSwingControls} from './swing-controls';
 import {savePlayerLocation,installLocationAutosave} from './player-location';
 import {createMovementControls} from './controls';
@@ -68,6 +69,7 @@ if(checkMode==='swing'||checkMode==='swing-grip')lea.position.set(1.4,.11,11);
 if(checkMode==='cat'||checkMode==='cat-model')lea.position.set(8,.11,-17.5);
 if(checkMode==='garden'){lea.position.set(-3.9,.11,-6.2);lea.rotation.y=0}
 if(checkMode==='watering-can'){lea.position.set(outdoorWateringCan.x-1.5,.11,outdoorWateringCan.z);lea.rotation.y=Math.PI/2}
+if(checkMode==='paint'){lea.position.set(outdoorPaintPuddle.x-2.2,.11,outdoorPaintPuddle.z);lea.rotation.y=Math.PI/2}
 if(checkMode==='cat-water'){lea.position.set(8,.11,-20.5);lea.rotation.y=0}
 if(checkMode==='knock'){lea.position.set(outdoorNeighbourDoors[0].x,.11,outdoorNeighbourDoors[0].z-1);lea.rotation.y=0}
 if(checkMode==='bus-stop'){lea.position.set(outdoorBusApproach.x+1,.11,outdoorBusApproach.z+.8);lea.rotation.y=Math.PI+.4}
@@ -90,6 +92,8 @@ async function start(){
  const leaves=createFallingLeaves(scene,outdoorBlocked,48,checkMode==='leaves');if(checkMode==='leaves')Object.assign(window,{leavesCheck:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)leaves.update(.04,lea.position,lea.rotation.y);return leaves.flying}});scene.onDisposeObservable.add(()=>leaves.dispose());
  const garden=createGardenWatering(scene,shadow,lea,character,outdoorFlowerBeds,outdoorWateringCan,say);scene.onDisposeObservable.add(()=>garden.dispose());
  if(checkMode==='garden'||checkMode==='watering-can')Object.assign(window,{leaCheck:{character,lea},gardenCheck:garden,gardenStep:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)garden.update(.04,true);return garden.wateringTime}});
+ const paint=createPaintPuddle(scene,outdoorPaintPuddle);scene.onDisposeObservable.add(()=>paint.dispose());
+ if(checkMode==='paint')Object.assign(window,{paintCheck:{paint,lea}});
  const knocks=createDoorKnocks(outdoorNeighbourDoors,lea);scene.onDisposeObservable.add(()=>knocks.dispose());
  if(checkMode==='knock')Object.assign(window,{knockCheck:knocks});
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
@@ -123,7 +127,7 @@ async function start(){
  let catCheckStarted=checkMode!=='cat';
  scene.environmentIntensity=.75;
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning||ride.active||garden.busy)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
- if(check&&!overviewHome&&!townOverview){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['К магазину',52,-23],['К качелям',1.4,11],['К кошке',8,-13.5],['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Дом с широким крыльцом',26,-6.3],['Дом с мансардой',-52,-6.3],['К клумбе',-3.9,-6.2],['К лейке',outdoorWateringCan.x-1.5,outdoorWateringCan.z],['К остановке',outdoorBusApproach.x,outdoorBusApproach.z],['К двери соседа',outdoorNeighbourDoors[0].x,outdoorNeighbourDoors[0].z]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(label==='К кошке'){catCheckStarted=true;walkTo(cat.root.position)}else walkTo(new Vector3(x,.11,z))};nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
+ if(check&&!overviewHome&&!townOverview){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['К магазину',52,-23],['К качелям',1.4,11],['К кошке',8,-13.5],['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Дом с широким крыльцом',26,-6.3],['Дом с мансардой',-52,-6.3],['К клумбе',-3.9,-6.2],['К лейке',outdoorWateringCan.x-1.5,outdoorWateringCan.z],['К луже краски',outdoorPaintPuddle.x+2.5,outdoorPaintPuddle.z],['К остановке',outdoorBusApproach.x,outdoorBusApproach.z],['К двери соседа',outdoorNeighbourDoors[0].x,outdoorNeighbourDoors[0].z]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(label==='К кошке'){catCheckStarted=true;walkTo(cat.root.position)}else walkTo(new Vector3(x,.11,z))};nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
   const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning&&!ride.active&&!garden.busy);if(garden.busy)route=[];let moving=false;
@@ -136,6 +140,7 @@ async function start(){
   dogCommands.update(!transitioning&&!ride.active);
   updateCatScene(dt);
   leaves.update(dt,lea.position,lea.rotation.y);
+  paint.update(dt,lea.position,lea.rotation.y,moving);
   garden.update(dt,!transitioning&&!ride.active);knocks.update(!transitioning&&!ride.active&&!garden.busy);
   const nearStore=nearInteraction(lea.position,storeApproach,2.8)&&!transitioning;storeButton.hidden=!nearStore;busButton.hidden=ride.active||garden.busy||!nearBusStop();storePin.mesh.setEnabled(nearStore);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y+(catScene?-.75:garden.busy?.95:0),camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
@@ -147,7 +152,7 @@ async function start(){
   if(checkMode==='store'){camera.target.set(52,2.6,-30.5);camera.alpha=Math.PI/2+.22;camera.beta=1.46;camera.radius=18}
   if(townOverview){camera.target.set(0,2,-16);camera.alpha=-Math.PI/2;camera.beta=1.35;camera.radius=84}
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near||townOverview;pin.mesh.setEnabled(near);
-  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · листьев в воздухе ${leaves.flying} · лейка ${garden.carried?'в руке':'не взята'}${garden.busy?' · поливаем '+garden.wateringTime.toFixed(1)+' с':''} · поливов ${garden.waterings} · стуков ${knocks.count} · кошку полили ${catSoakings} · FPS ${engine.getFps().toFixed(0)}`;
+  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · листьев в воздухе ${leaves.flying} · лейка ${garden.carried?'в руке':'не взята'}${garden.busy?' · поливаем '+garden.wateringTime.toFixed(1)+' с':''} · поливов ${garden.waterings} · стуков ${knocks.count} · кошку полили ${catSoakings} · краска ${paint.paint.toFixed(0)} с, следов ${paint.steps} · FPS ${engine.getFps().toFixed(0)}`;
   // Several actions can apply at once (e.g. water flowers and pick up the can): stack them.
   let shownActions=0;app.querySelectorAll<HTMLButtonElement>('.street-swing').forEach(b=>{if(!b.hidden)b.style.bottom=`${24+64*shownActions++}px`});
   toast.style.bottom=shownActions?`${32+64*shownActions}px`:'';
