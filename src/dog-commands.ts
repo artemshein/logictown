@@ -6,11 +6,11 @@ export function installDogCommands(host:HTMLElement,dog:Awaited<ReturnType<typeo
  const action=panel.querySelector<HTMLButtonElement>('.dog-command-action')!,close=panel.querySelector<HTMLButtonElement>('.dog-command-close')!;
  const sound=createDogCommandSound(soundEnabled,(count,playing)=>{panel.dataset.barkCount=String(count);panel.dataset.barkPlaying=String(playing)});
  panel.dataset.barkCount='0';panel.dataset.barkPlaying='false';
- const sync=()=>{const text=dog.sitting?'За мной':'Сидеть';if(action.textContent!==text)action.textContent=text};
+ const sync=()=>{const text=dog.staying?'За мной':'Сидеть';if(action.textContent!==text)action.textContent=text};
  const hide=()=>{panel.hidden=true};
  const key=(e:KeyboardEvent)=>{if(e.code==='Escape')hide()};
  dog.setInteraction(()=>{panel.hidden=false;sync()});
- action.onclick=()=>{dog.command(dog.sitting?'follow':'sit');void sound.play();sync()};close.onclick=hide;
+ action.onclick=()=>{dog.command(dog.staying?'follow':'sit');void sound.play();sync()};close.onclick=hide;
  host.append(panel);window.addEventListener('keydown',key);
  return {update(active=true){if(!active)hide();else if(!panel.hidden)sync()},dispose(){sound.dispose();dog.setInteraction(()=>{});window.removeEventListener('keydown',key);panel.remove()}};
 }

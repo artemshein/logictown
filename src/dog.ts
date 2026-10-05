@@ -30,5 +30,5 @@ export async function loadDog(scene:Scene,lea:TransformNode,shadow:ShadowGenerat
   if(!walking){blend+=((state.sitting?1:0)-blend)*Math.min(1,dt*7);rest.forEach(({node,p,q},i)=>{Vector3.LerpToRef(p,seated[i].p,blend,node.position);node.rotationQuaternion=Quaternion.Slerp(q,seated[i].q,blend)})}else blend=0;
   if(!active)return;
   hints.update(lea.position,root.position,collected,bark);
- },get sitting(){return motion.command==='sit'||motion.command==='auto'&&blend>.9},get barked(){return [...hints.notified]},get barkCount(){return hints.count}};
+ },get sitting(){return motion.command==='sit'||motion.command==='auto'&&blend>.9},get staying(){return motion.command==='sit'},get barked(){return [...hints.notified]},get barkCount(){return hints.count}};
 }
