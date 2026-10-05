@@ -7,7 +7,7 @@ import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
 import {createSwingControls} from './swing-controls';
-import {readPlayerLocation,savePlayerLocation,installLocationAutosave} from './player-location';
+import {savePlayerLocation,installLocationAutosave} from './player-location';
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
 import {createViewportSync} from './viewport';
@@ -35,11 +35,6 @@ function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.positio
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null;
 const check=!!checkMode;
 const persistLocation=!check;
-const previousLocation=persistLocation?readPlayerLocation():undefined;
-if(previousLocation?.area==='street'&&!outdoorBlocked(previousLocation.x,previousLocation.z)){
- lea.position.set(previousLocation.x,.11,previousLocation.z);lea.rotation.y=previousLocation.heading;
- camera.alpha=-Math.PI/2-lea.rotation.y;camera.target.set(lea.position.x,1.1,lea.position.z);
-}
 const townOverview=checkMode==='town';
 if(townOverview){scene.fogStart=140;scene.fogEnd=240;homeButton.hidden=true}
 const fenceOverview=checkMode==='fence-white'||checkMode==='fence-wire';
@@ -52,14 +47,14 @@ if(checkMode==='house-c')lea.position.set(26,.11,-6.3);
 if(checkMode==='house-d')lea.position.set(-52,.11,-6.3);
 if(checkMode==='shadow-road'){lea.position.set(20,.11,-18);lea.rotation.y=Math.PI}
 if(checkMode==='shadow-pavement'){lea.position.set(20,.11,-22.5);lea.rotation.y=Math.PI}
-function returnHome(){if(transitioning||!nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2))return;transitioning=true;route=[];loading.querySelector('strong')!.textContent='Возвращаемся домой…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:1,area:'house',x:18.8,z:-5.1,heading:Math.PI/2});try{sessionStorage.setItem('logictown-return-home','1')}catch{}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(checkMode==='outdoor'?'/checks/outdoor.html':check?'/checks/house.html':'/')))}
+function returnHome(){if(transitioning||!nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2))return;transitioning=true;route=[];loading.querySelector('strong')!.textContent='Возвращаемся домой…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:2,area:'house',room:'hall'});try{sessionStorage.setItem('logictown-return-home','1')}catch{}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(checkMode==='outdoor'?'/checks/outdoor.html':check?'/checks/house.html':'/')))}
 homeButton.onclick=returnHome;
 const pin=createInteractionMarker(scene,'Вернуться в дом','⌂',new Vector3(outdoorDoor.x,2,outdoorDoor.z),returnHome);
 const walls=outdoorObstacles.filter(o=>o.kind==='house'||o.kind==='store'||o.kind==='fence'||o.kind==='gate').map(o=>({min:new Vector3(o.x-o.w/2,0,o.z-o.d/2),max:new Vector3(o.x+o.w/2,o.kind==='store'?outdoorStore.h:o.kind==='house'?outdoorHomes.find(h=>h.x===o.x&&h.z===o.z)!.h:1.35,o.z+o.d/2)}));
 async function start(){
  const [world,character]=await Promise.all([buildOutdoorWorld(scene,shadow),loadLea(scene,lea,shadow)]);
  const ride=createSwingRide(lea,character,world.swingHinge,world.swingSeat);
- const locationAutosave=installLocationAutosave(()=>({version:1,area:'street',x:ride.safePosition.x,z:ride.safePosition.z,heading:ride.safeHeading}),()=>persistLocation&&!transitioning);
+ const locationAutosave=installLocationAutosave(()=>({version:2,area:'street'}),()=>persistLocation&&!transitioning);
  locationAutosave.flush();scene.onDisposeObservable.add(()=>locationAutosave.dispose());
  const swingSound=createSwingSound();scene.onDisposeObservable.add(()=>swingSound.dispose());
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;

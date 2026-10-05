@@ -1,17 +1,25 @@
-export type PlayerLocation={version:1;area:'house'|'street';x:number;z:number;heading:number};
+import type {RoomId} from './house-data';
+export type PlayerLocation={version:2;area:'house';room:RoomId}|{version:2;area:'street'};
+const rooms=['bedroom','living','kitchen','bathroom','toilet','hall'];
 type Store=Pick<Storage,'getItem'|'setItem'>;
 export const playerLocationKey='logictown-player-location-v1';
 function browserStore():Store|undefined{try{return localStorage}catch{return undefined}}
 export function parsePlayerLocation(raw:unknown):PlayerLocation|undefined{
  if(!raw||typeof raw!=='object')return;
  const r=raw as Record<string,unknown>;
- if(r.version!==1||(r.area!=='house'&&r.area!=='street'))return;
- if(![r.x,r.z,r.heading].every(v=>typeof v==='number'&&Number.isFinite(v)))return;
- if(Math.abs(r.x as number)>2000||Math.abs(r.z as number)>2000)return;
- return {version:1,area:r.area,x:r.x as number,z:r.z as number,heading:Math.atan2(Math.sin(r.heading as number),Math.cos(r.heading as number))};
+ if(r.version!==2)return;
+ if(r.area==='street')return {version:2,area:'street'};
+ if(r.area==='house'&&typeof r.room==='string'&&rooms.includes(r.room))return {version:2,area:'house',room:r.room as RoomId};
 }
 export function readPlayerLocation(store=browserStore()){
- try{return parsePlayerLocation(JSON.parse(store?.getItem(playerLocationKey)||'null'))}catch{return undefined}
+ try{
+  const raw=JSON.parse(store?.getItem(playerLocationKey)||'null');
+  if(raw?.version===1){
+   if(raw.area==='street')return {version:2,area:'street'} as PlayerLocation;
+   if(raw.area==='house'){const room=store?.getItem('logictown-room');return {version:2,area:'house',room:room&&rooms.includes(room)?room as RoomId:'bedroom'} as PlayerLocation}
+  }
+  return parsePlayerLocation(raw);
+ }catch{return undefined}
 }
 export function savePlayerLocation(location:PlayerLocation,store=browserStore()){
  const valid=parsePlayerLocation(location);if(!valid||!store)return false;

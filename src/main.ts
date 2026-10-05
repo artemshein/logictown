@@ -208,7 +208,7 @@ $('#sound').onclick=()=>{unlockSound();sound=!sound;$('#sound').textContent=soun
 let memoryObjects:ReturnType<typeof installMemoryObjects>|undefined;
 const memory=createMemoryQuest({modal,close:closeModal,celebrate:()=>characterAction('Celebrate'),changed:()=>memoryObjects?.sync(),exit:()=>{
  leavingHouse=true;marker.isVisible=false;route=[];arrival=null;memoryObjects?.sync();
- if(persistLocation)savePlayerLocation({version:1,area:'street',x:0,z:-6.3,heading:0});
+ if(persistLocation)savePlayerLocation({version:2,area:'street'});
  $('.loading span').textContent='Выходим на улицу…';$('.loading').hidden=false;
  requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(outdoorCheck?'/street.html?check=outdoor':memoryCheck?'/street.html?check=1':'/street.html')));
 
@@ -249,18 +249,14 @@ function switchRoom(id:RoomId){
 }
 for(const b of Array.from(document.querySelectorAll<HTMLButtonElement>('[data-room]')))b.onclick=()=>{const id=b.dataset.room as RoomId,cfg=roomInfo[id];walkTo(new Vector3(layout[id][0]+cfg.spawn[0],.11,layout[id][1]+cfg.spawn[1]));};
 let initialRoom:RoomId='bedroom';try{const stored=localStorage.getItem(roomStorageKey);if(stored&&stored in roomInfo)initialRoom=stored as RoomId}catch{}
+if(previousLocation?.area==='house')initialRoom=previousLocation.room;
 if(memoryCheck)initialRoom='hall';
 if(interiorCheck){const id=new URLSearchParams(location.search).get('room');initialRoom=id&&id in roomInfo?id as RoomId:'bedroom'}
 girl.position.set(layout[initialRoom][0]+roomInfo[initialRoom].spawn[0],.11,layout[initialRoom][1]+roomInfo[initialRoom].spawn[1]);
 if(memoryCheck)girl.position.set(18.8,.11,-5.1);
 if(returningHome){initialRoom='hall';girl.position.set(18.8,.11,-5.1)}
 girl.rotation.y=memoryCheck?Math.PI/2:0;camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);switchRoom(initialRoom);
-if(!returningHome&&previousLocation?.area==='house'&&!houseBlocked(previousLocation.x,previousLocation.z)){
- girl.position.set(previousLocation.x,.11,previousLocation.z);girl.rotation.y=previousLocation.heading;
- initialRoom=roomAt(previousLocation.x,previousLocation.z)!;switchRoom(initialRoom);
- camera.alpha=-Math.PI/2-girl.rotation.y;camera.target.set(girl.position.x,1,girl.position.z);
-}
-const locationAutosave=installLocationAutosave(()=>({version:1,area:'house',x:girl.position.x,z:girl.position.z,heading:girl.rotation.y}),()=>persistLocation&&!resumingStreet&&!leavingHouse);
+const locationAutosave=installLocationAutosave(()=>({version:2,area:'house',room:currentRoom}),()=>persistLocation&&!resumingStreet&&!leavingHouse);
 locationAutosave.flush();import.meta.hot?.dispose(()=>locationAutosave.dispose());
 let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
 void loadDog(scene,girl,shadow,bark).then(asset=>dog=asset).catch(e=>console.error('Unable to load puppy',e));
