@@ -8,6 +8,7 @@ import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
 import {createWindSound} from './wind-sound';
+import {createFallingLeaves} from './falling-leaves';
 import {createSwingControls} from './swing-controls';
 import {savePlayerLocation,installLocationAutosave} from './player-location';
 import {createMovementControls} from './controls';
@@ -70,6 +71,7 @@ async function start(){
  const swingSound=createSwingSound();scene.onDisposeObservable.add(()=>swingSound.dispose());
  const windSound=createWindSound(checkMode==='wind');scene.onDisposeObservable.add(()=>windSound.dispose());
  if(checkMode==='wind'){const nav=document.createElement('div');nav.className='street-check';nav.style.top='auto';nav.style.bottom='150px';const button=document.createElement('button');button.textContent='Проверить ветер';button.onclick=()=>{void windSound.preview()};const status=document.createElement('output');status.id='wind-status';nav.append(button,status);app.append(nav);scene.onBeforeRenderObservable.add(()=>status.textContent=windSound.status());}
+ const leaves=createFallingLeaves(scene,outdoorBlocked,48,checkMode==='leaves');if(checkMode==='leaves')Object.assign(window,{leavesCheck:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)leaves.update(.04,lea.position,lea.rotation.y);return leaves.flying}});scene.onDisposeObservable.add(()=>leaves.dispose());
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
  const swingControls=createSwingControls(app);
  const nearSwing=()=>Vector3.Distance(lea.position,world.swingSeat.getAbsolutePosition())<2.6&&!transitioning;
@@ -96,6 +98,7 @@ async function start(){
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
   dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
   dogCommands.update(!transitioning&&!ride.active);
+  leaves.update(dt,lea.position,lea.rotation.y);
   const nearStore=nearInteraction(lea.position,storeApproach,2.8)&&!transitioning;storeButton.hidden=!nearStore;storePin.mesh.setEnabled(nearStore);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
@@ -106,7 +109,7 @@ async function start(){
   if(checkMode==='store'){camera.target.set(52,2.6,-30.5);camera.alpha=Math.PI/2+.22;camera.beta=1.46;camera.radius=18}
   if(townOverview){camera.target.set(0,2,-16);camera.alpha=-Math.PI/2;camera.beta=1.35;camera.radius=84}
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));const near=nearInteraction(lea.position,new Vector3(outdoorEntrance.x,.11,outdoorEntrance.z),2.2)&&!transitioning;homeButton.hidden=!near||townOverview;pin.mesh.setEnabled(near);
-  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · FPS ${engine.getFps().toFixed(0)}`;
+  if(check&&!overviewHome&&!townOverview)document.querySelector('#street-status')!.textContent=`${ride.active?'Качаемся · хват '+(character.gripError*1000).toFixed(1)+' мм · ':''}Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · щенок ${dog.sitting?'сидит':'идёт'} · расстояние ${Vector3.Distance(lea.position,dog.root.position).toFixed(1)} · кошка ${cat.state} ${cat.root.position.x.toFixed(1)}, ${cat.root.position.z.toFixed(1)} · сближение ${cat.closingSpeed.toFixed(1)} · до кошки ${Vector3.Distance(cat.root.position,dog.root.position).toFixed(1)} · испугов ${cat.fleeCount} · листьев в воздухе ${leaves.flying} · FPS ${engine.getFps().toFixed(0)}`;
   scene.render();
   locationAutosave.tick(dt);
  });
