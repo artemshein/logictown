@@ -6,6 +6,7 @@ import {loadDog} from './dog';
 import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
+import {createSwingControls} from './swing-controls';
 import {createMovementControls} from './controls';
 import {moveWithCollisions,nearInteraction} from './movement';
 import {createViewportSync} from './viewport';
@@ -53,25 +54,26 @@ async function start(){
  const ride=createSwingRide(lea,character,world.swingHinge,world.swingSeat);
  const swingSound=createSwingSound();scene.onDisposeObservable.add(()=>swingSound.dispose());
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
+ const swingControls=createSwingControls(app);
  const nearSwing=()=>Vector3.Distance(lea.position,world.swingSeat.getAbsolutePosition())<2.6&&!transitioning;
- swingButton.onclick=()=>{if(!nearSwing())return;route=[];controls.clear();ride.start()};
- let swallowClick=false;
- const cancelRide=(e:Event)=>{if(e.type==='click'&&swallowClick){swallowClick=false;e.preventDefault();e.stopImmediatePropagation();return}if(!ride.active)return;ride.stop();controls.clear();route=[];if(e.type==='pointerdown')swallowClick=true;e.preventDefault();e.stopImmediatePropagation()};
- window.addEventListener('keydown',cancelRide,true);window.addEventListener('pointerdown',cancelRide,true);window.addEventListener('click',cancelRide,true);
- import.meta.hot?.dispose(()=>{window.removeEventListener('keydown',cancelRide,true);window.removeEventListener('pointerdown',cancelRide,true);window.removeEventListener('click',cancelRide,true)});
+ const stopRide=()=>{ride.stop();swingControls.show(false);controls.clear();route=[]};
+ swingButton.onclick=()=>{if(ride.active){stopRide();return}if(!nearSwing())return;route=[];controls.clear();ride.start();swingControls.show(true)};
+ const cancelRide=(e:KeyboardEvent)=>{if(ride.active&&e.code==='Escape'){stopRide();e.preventDefault()}};
+ window.addEventListener('keydown',cancelRide);
+ scene.onDisposeObservable.add(()=>{swingControls.dispose();window.removeEventListener('keydown',cancelRide)});
  const dog=await loadDog(scene,lea,shadow,()=>false,{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
  const cat=await loadStreetCat(scene,shadow,{path:outdoorPath,blocked:outdoorBlocked});
  if(checkMode==='cat-model')cat.root.rotation.y=Math.PI;
  let catCheckStarted=checkMode!=='cat';
  scene.environmentIntensity=.75;
- scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
+ scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning||ride.active)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
  if(check&&!overviewHome&&!townOverview){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['К магазину',52,-23],['К качелям',1.4,11],['К кошке',8,-13.5],['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Дом с широким крыльцом',26,-6.3],['Дом с мансардой',-52,-6.3]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(label==='К кошке'){catCheckStarted=true;walkTo(cat.root.position)}else walkTo(new Vector3(x,.11,z))};nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
-  const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning);let moving=false;
+  const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning&&!ride.active);let moving=false;
   if(!ride.active&&(input.forward||input.turn)){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*3.3,outdoorBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(!ride.active&&route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!outdoorBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
-  if(ride.active)ride.update(dt);else character.play(moving?'Walk':'Idle');
+  if(ride.active){ride.update(dt,swingControls.read());swingControls.update(ride.amplitude,ride.direction,ride.feedback,ride.won)}else character.play(moving?'Walk':'Idle');
   swingSound.update(ride.active,ride.angle,dt,Vector3.Distance(lea.position,world.swingHinge.getAbsolutePosition()));
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
   dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
