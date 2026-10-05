@@ -20,7 +20,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   for(const t of [surface.diffuseTexture,surface.bumpTexture])if(t instanceof Texture){const map=t.clone();map.uScale=w/3;map.vScale=d/3;if(t===surface.diffuseTexture)surface.diffuseTexture=map;else surface.bumpTexture=map}
   mesh.receiveShadows=true;floors.push(mesh);return mesh;
  }
- // Keep distant grass green: blue scene fog otherwise creates a false sky gap below the hills.
+ // Keep the lawn colour consistent all the way to the panorama.
  const lawn=ground('neighbourhood lawn',0,-16,500,500,-.01,grass);lawn.applyFog=false;
  lawn.setVerticesData(VertexBuffer.ColorKind,Array.from({length:lawn.getTotalVertices()},()=>[.58,.92,.68,1]).flat());
  ground('quiet residential street',0,-18,400,6,.012,asphalt);

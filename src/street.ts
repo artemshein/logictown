@@ -22,7 +22,7 @@ const app=document.querySelector<HTMLElement>('#app')!;
 app.innerHTML='<canvas id="world" aria-label="Двор Леи и солнечная улица. Управление: WASD или стрелки справа. Можно пройти через открытую калитку."></canvas><div class="loading"><strong>Выходим на улицу…</strong><span>Тихий город</span></div><button class="street-home" hidden>⌂ В дом</button><button class="street-swing" hidden>Покачаться</button><div class="toast" role="status"></div>';
 const canvas=document.querySelector<HTMLCanvasElement>('#world')!,loading=document.querySelector<HTMLElement>('.loading')!,homeButton=document.querySelector<HTMLButtonElement>('.street-home')!;
 const engine=new Engine(canvas,false,{stencil:true,preserveDrawingBuffer:false,powerPreference:'high-performance'});engine.renderEvenInBackground=false;engine.maxFPS=60;
-const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.fogMode=Scene.FOGMODE_LINEAR;scene.fogStart=65;scene.fogEnd=145;scene.fogColor=new Color3(.68,.76,.82);
+const scene=new Scene(engine);scene.clearColor=new Color4(.34,.69,.96,1);scene.fogMode=Scene.FOGMODE_NONE;
 const camera=new ArcRotateCamera('street camera',-Math.PI/2,1.25,3.8,new Vector3(outdoorSpawn.x,1.1,outdoorSpawn.z),scene);camera.minZ=.05;camera.maxZ=180;camera.fov=.9;new FxaaPostProcess('street antialias',1,camera);let boom=3.8;
 const viewport=createViewportSync(canvas,engine,aspect=>{camera.fov=aspect<.8?1.05:.9;boom=aspect<.8?4.2:3.8});
 // Avoid saturating StandardMaterial's diffuse lighting: too much fill erases pavement shadows.
@@ -39,7 +39,7 @@ const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('ch
 const check=!!checkMode;
 const persistLocation=!check;
 const townOverview=checkMode==='town';
-if(townOverview){scene.fogStart=140;scene.fogEnd=240;homeButton.hidden=true}
+if(townOverview){homeButton.hidden=true}
 const fenceOverview=checkMode==='fence-white'||checkMode==='fence-wire';
 const overviewHome=checkMode?.startsWith('architecture-')?outdoorHomes.find(h=>h.model===checkMode.slice(-1)&&h.angle===0):fenceOverview?outdoorHomes.find(h=>h.model===(checkMode==='fence-wire'?'b':'a')&&h.angle===0):undefined;
 if(overviewHome)lea.position.set(overviewHome.x,.11,-11);
