@@ -1,6 +1,7 @@
-import {Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,Scene,ShadowGenerator,UniversalCamera,Vector3} from '@babylonjs/core';
+import {Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointLight,Scene,ShadowGenerator,UniversalCamera,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
-import {buildBusInterior} from './bus-interior';
+import {buildBusInterior,busInterior} from './bus-interior';
+import {createBusEngineSound} from './bus-engine-sound';
 import {outdoorBusRoute} from './outdoor-layout';
 import {createOutdoorSky,outdoorSunDirection} from './outdoor-sky';
 import {createViewportSync} from './viewport';
@@ -20,6 +21,11 @@ sky.diffuse=sun.diffuse.clone();sky.groundColor=sun.diffuse.scale(.45);
 const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.0005;shadow.normalBias=.02;shadow.darkness=.22;
 createOutdoorSky(scene);
 const bus=buildBusInterior(scene);bus.root.position.set(outdoorBusRoute.from,0,outdoorBusRoute.z);
+// The roof blocks daylight: the cabin gets its own soft fill and ceiling lamp instead.
+sky.excludedMeshes.push(...bus.interior);sun.excludedMeshes.push(...bus.interior);
+const cabinFill=new HemisphericLight('bus cabin fill',Vector3.Up(),scene);cabinFill.intensity=.72;cabinFill.diffuse=new Color3(1,.98,.94);cabinFill.groundColor=new Color3(.42,.42,.44);cabinFill.includedOnlyMeshes=bus.interior;
+const cabinLamp=new PointLight('bus ceiling lamps',new Vector3(0,busInterior.ceiling-.3,0),scene);cabinLamp.parent=bus.root;cabinLamp.intensity=.45;cabinLamp.range=9;cabinLamp.diffuse=new Color3(1,.97,.9);cabinLamp.includedOnlyMeshes=bus.interior;
+const sound=createBusEngineSound();
 const camera=new UniversalCamera('bus passenger view',Vector3.Zero(),scene);camera.parent=bus.head;camera.inputs.clear();camera.minZ=.05;camera.maxZ=180;camera.fov=.95;new FxaaPostProcess('bus antialias',1,camera);
 const viewport=createViewportSync(canvas,engine,aspect=>camera.fov=aspect<.8?1.2:.95);
 // Head turning only: the passenger stays seated. Start glancing at the left window.
@@ -50,6 +56,7 @@ function place(t:number){
 async function start(){
  await buildOutdoorWorld(scene,shadow);
  place(0);await scene.whenReadyAsync();loading.hidden=true;
+ await sound.unlock();if(!sound.running)hint.textContent='Потяни экран или нажми стрелки, чтобы посмотреть в окно. Нажми, чтобы включить звук.';
  hint.classList.add('visible');setTimeout(()=>hint.classList.remove('visible'),4500);
  if(check)Object.assign(window,{busCheck:{get time(){return time},get x(){return bus.root.position.x},look,skip(t:number){time=t}}});
  engine.runRenderLoop(()=>{
@@ -59,9 +66,11 @@ async function start(){
   camera.rotation.set(look.pitch,look.yaw,0);
   time=Number.isFinite(frozenAt)?frozenAt:time+dt;place(Math.min(time,busRideDuration));
   sun.position.copyFrom(bus.root.position.add(outdoorSunDirection.scale(80)));
+  const u=Math.min(1,time/busRideDuration);sound.update(Math.sin(Math.PI*u),arriving?0:1);
+  bus.setNextStop(time<.6?'1 · Школа':time<busRideDuration-1.2?'Следующая: Магазин':'Остановка «Магазин»');
   scene.render();
   if(!Number.isFinite(frozenAt)&&time>=busRideDuration)arrive();
  });
 }
 void start().catch(error=>{console.error(error);loading.querySelector('strong')!.textContent='Не удалось завести автобус';loading.querySelector('span')!.innerHTML='<a href="/street.html">Вернуться на улицу</a>'});
-import.meta.hot?.dispose(()=>{window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);viewport.dispose();engine.dispose()});
+import.meta.hot?.dispose(()=>{sound.dispose();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);viewport.dispose();engine.dispose()});
