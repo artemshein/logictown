@@ -2,6 +2,7 @@ import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture
 import '@babylonjs/loaders/glTF';
 import {createGardenPaint} from './outdoor-colors';
 import {OutdoorGroundBlend} from './outdoor-ground-blend';
+import {buildBusStop} from './bus-stop';
 import {outdoorStore,outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
@@ -30,6 +31,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
  if(outdoorEntrance.x!==0)ground('gate connecting path',outdoorEntrance.x/2,-11,Math.abs(outdoorEntrance.x)+2.2,2.2,.041,paving);
  ground('swing landing',outdoorSwing.x,outdoorSwing.z,5.2,4,.025,paving);
+ buildBusStop(scene,shadow);
  const names=['building-type-a','building-type-b','building-type-c','building-type-d','tree-large','tree-small','fence','fence-wire','swing','garden-plant','village-store'];
  const containers=new Map(await Promise.all(names.map(async name=>[name,await LoadAssetContainerAsync(name==='garden-plant'?'/assets/polyhaven/potted_plant_01.glb':`/assets/outdoor/${name}.glb`,scene)] as const)));
  const templateBounds=new Map<string,{min:Vector3;size:Vector3}>();

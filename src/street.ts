@@ -1,6 +1,6 @@
 import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
-import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorStore,outdoorHomes,outdoorEntrance,outdoorDoor,outdoorFlowerBeds,outdoorWateringCan,outdoorNeighbourDoors} from './outdoor-layout';
+import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorStore,outdoorHomes,outdoorEntrance,outdoorDoor,outdoorFlowerBeds,outdoorWateringCan,outdoorNeighbourDoors,outdoorBusStop,outdoorBusApproach} from './outdoor-layout';
 import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
@@ -44,12 +44,18 @@ const check=!!checkMode;
 const persistLocation=!check;
 let returningFromStore=false;try{returningFromStore=sessionStorage.getItem('logictown-return-store')==='1';sessionStorage.removeItem('logictown-return-store')}catch{}
 if(returningFromStore)lea.position.set(52,.11,-23);
+let returningFromBus=false;try{returningFromBus=sessionStorage.getItem('logictown-return-bus')==='1';sessionStorage.removeItem('logictown-return-bus')}catch{}
+if(returningFromBus){lea.position.set(outdoorBusApproach.x,.11,outdoorBusApproach.z);lea.rotation.y=Math.PI}
 const toast=document.querySelector<HTMLElement>('.toast')!;let toastTimer:ReturnType<typeof setTimeout>|undefined;
 function say(text:string){toast.textContent=text;toast.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('visible'),2600)}
 const storeApproach=new Vector3(52,.11,-24);
 const storeButton=document.createElement('button');storeButton.className='street-swing';storeButton.textContent='Войти в магазин';storeButton.hidden=true;app.append(storeButton);
 function enterStore(){if(transitioning||!nearInteraction(lea.position,storeApproach,2.8))return;transitioning=true;controls.clear();if(persistLocation)savePlayerLocation({version:2,area:'store'});location.assign(check?'/store.html?check=entry':'/store.html')}
 storeButton.onclick=enterStore;
+const busButton=document.createElement('button');busButton.className='street-swing';busButton.textContent='Поехать в школу';busButton.hidden=true;app.append(busButton);
+const nearBusStop=()=>!transitioning&&(nearInteraction(lea.position,new Vector3(outdoorBusApproach.x,.11,outdoorBusApproach.z),2.4)||Math.abs(lea.position.x-outdoorBusStop.x)<outdoorBusStop.w/2&&Math.abs(lea.position.z-outdoorBusStop.z)<outdoorBusStop.d/2);
+function rideBus(){if(!nearBusStop())return;transitioning=true;route=[];controls.clear();loading.querySelector('strong')!.textContent='Садимся в автобус…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:2,area:'street'});requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(check?'/bus.html?check=ride':'/bus.html')))}
+busButton.onclick=rideBus;
 const storePin=createInteractionMarker(scene,'Войти в магазин','↪',new Vector3(52,1.5,-24.5),enterStore);
 const townOverview=checkMode==='town';
 if(townOverview){homeButton.hidden=true}
@@ -62,6 +68,7 @@ if(checkMode==='cat'||checkMode==='cat-model')lea.position.set(8,.11,-17.5);
 if(checkMode==='garden'){lea.position.set(-3.9,.11,-6.2);lea.rotation.y=0}
 if(checkMode==='watering-can'){lea.position.set(outdoorWateringCan.x-1.5,.11,outdoorWateringCan.z);lea.rotation.y=Math.PI/2}
 if(checkMode==='knock'){lea.position.set(outdoorNeighbourDoors[0].x,.11,outdoorNeighbourDoors[0].z-1);lea.rotation.y=0}
+if(checkMode==='bus-stop'){lea.position.set(outdoorBusApproach.x+1,.11,outdoorBusApproach.z+.8);lea.rotation.y=Math.PI+.4}
 if(checkMode==='house-c')lea.position.set(26,.11,-6.3);
 if(checkMode==='house-d')lea.position.set(-52,.11,-6.3);
 if(checkMode==='shadow-road'){lea.position.set(20,.11,-18);lea.rotation.y=Math.PI}
@@ -98,7 +105,7 @@ async function start(){
  let catCheckStarted=checkMode!=='cat';
  scene.environmentIntensity=.75;
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning||ride.active||garden.busy)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&m.isPickable);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint&&world.floors.includes(hit.pickedMesh as typeof world.floors[number]))walkTo(hit.pickedPoint)});
- if(check&&!overviewHome&&!townOverview){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['К магазину',52,-23],['К качелям',1.4,11],['К кошке',8,-13.5],['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Дом с широким крыльцом',26,-6.3],['Дом с мансардой',-52,-6.3],['К клумбе',-3.9,-6.2],['К лейке',outdoorWateringCan.x-1.5,outdoorWateringCan.z],['К двери соседа',outdoorNeighbourDoors[0].x,outdoorNeighbourDoors[0].z]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(label==='К кошке'){catCheckStarted=true;walkTo(cat.root.position)}else walkTo(new Vector3(x,.11,z))};nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
+ if(check&&!overviewHome&&!townOverview){const nav=document.createElement('nav');nav.className='street-check';for(const [label,x,z]of [['К магазину',52,-23],['К качелям',1.4,11],['К кошке',8,-13.5],['У калитки',0,-11],['На улице',20,-18],['Тротуар',20,-22.5],['Соседний двор',26,-29.2],['Задний двор',0,9],['У дерева',9.5,3],['Перед домом',outdoorSpawn.x,outdoorSpawn.z],['Дом с широким крыльцом',26,-6.3],['Дом с мансардой',-52,-6.3],['К клумбе',-3.9,-6.2],['К лейке',outdoorWateringCan.x-1.5,outdoorWateringCan.z],['К остановке',outdoorBusApproach.x,outdoorBusApproach.z],['К двери соседа',outdoorNeighbourDoors[0].x,outdoorNeighbourDoors[0].z]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(label==='К кошке'){catCheckStarted=true;walkTo(cat.root.position)}else walkTo(new Vector3(x,.11,z))};nav.append(b)}const out=document.createElement('output');out.id='street-status';nav.append(out);app.append(nav)}
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
   const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning&&!ride.active&&!garden.busy);if(garden.busy)route=[];let moving=false;
@@ -111,7 +118,7 @@ async function start(){
   dogCommands.update(!transitioning&&!ride.active);
   leaves.update(dt,lea.position,lea.rotation.y);
   garden.update(dt,!transitioning&&!ride.active);knocks.update(!transitioning&&!ride.active&&!garden.busy);
-  const nearStore=nearInteraction(lea.position,storeApproach,2.8)&&!transitioning;storeButton.hidden=!nearStore;storePin.mesh.setEnabled(nearStore);
+  const nearStore=nearInteraction(lea.position,storeApproach,2.8)&&!transitioning;storeButton.hidden=!nearStore;busButton.hidden=ride.active||garden.busy||!nearBusStop();storePin.mesh.setEnabled(nearStore);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y+(garden.busy?.95:0),camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
   if(overviewHome){camera.target.set(overviewHome.x,3.9,overviewHome.z);camera.alpha=-Math.PI/2;camera.beta=1.47;camera.radius=25}

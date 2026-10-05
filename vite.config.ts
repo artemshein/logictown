@@ -8,6 +8,7 @@ export default defineConfig({
         game: 'index.html',
         street: 'street.html',
         store: 'store.html',
+        bus: 'bus.html',
         character: 'character.html',
       },
     },
