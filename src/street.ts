@@ -7,6 +7,7 @@ import {installDogCommands} from './dog-commands';
 import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
+import {createWindSound} from './wind-sound';
 import {createSwingControls} from './swing-controls';
 import {savePlayerLocation,installLocationAutosave} from './player-location';
 import {createMovementControls} from './controls';
@@ -67,6 +68,8 @@ async function start(){
  const locationAutosave=installLocationAutosave(()=>({version:2,area:'street'}),()=>persistLocation&&!transitioning);
  locationAutosave.flush();scene.onDisposeObservable.add(()=>locationAutosave.dispose());
  const swingSound=createSwingSound();scene.onDisposeObservable.add(()=>swingSound.dispose());
+ const windSound=createWindSound(checkMode==='wind');scene.onDisposeObservable.add(()=>windSound.dispose());
+ if(checkMode==='wind'){const nav=document.createElement('div');nav.className='street-check';nav.style.top='auto';nav.style.bottom='150px';const button=document.createElement('button');button.textContent='Проверить ветер';button.onclick=()=>{void windSound.preview()};const status=document.createElement('output');status.id='wind-status';nav.append(button,status);app.append(nav);scene.onBeforeRenderObservable.add(()=>status.textContent=windSound.status());}
  const swingButton=document.querySelector<HTMLButtonElement>('.street-swing')!;
  const swingControls=createSwingControls(app);
  const nearSwing=()=>Vector3.Distance(lea.position,world.swingSeat.getAbsolutePosition())<2.6&&!transitioning;
