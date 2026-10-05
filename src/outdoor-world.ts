@@ -22,7 +22,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  }
  // Keep the lawn colour consistent all the way to the panorama.
  const lawn=ground('neighbourhood lawn',0,-16,500,500,-.01,grass);lawn.applyFog=false;
- lawn.setVerticesData(VertexBuffer.ColorKind,Array.from({length:lawn.getTotalVertices()},()=>[.58,.92,.68,1]).flat());
+ lawn.setVerticesData(VertexBuffer.ColorKind,Array.from({length:lawn.getTotalVertices()},()=>[.76,.88,.72,1]).flat());
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
