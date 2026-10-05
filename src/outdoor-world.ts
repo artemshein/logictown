@@ -10,9 +10,10 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
   return mat;
  };
  const grass=texture('grass_ground'),asphalt=texture('asphalt_01'),paving=texture('pavement_01');
- // Warm, muted meadow green to match the grass in the Alps Field panorama.
- grass.diffuseColor=new Color3(.58,.92,.68);
- grass.diffuseTexture!.level=1.4;
+ // Keep the photographed grass colour. A green material tint was hidden by
+ // lighting clamping in sunlight but became fully visible inside shadows.
+ grass.diffuseColor=Color3.White();grass.diffuseTexture!.level=1;
+ grass.specularColor=Color3.Black();
  const floors:Mesh[]=[];
  function ground(name:string,x:number,z:number,w:number,d:number,y:number,material:StandardMaterial){
   const mesh=MeshBuilder.CreateGround(name,{width:w,height:d},scene);mesh.position.set(x,y,z);const surface=material.clone(name+' material') as StandardMaterial;mesh.material=surface;
