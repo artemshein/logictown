@@ -1,7 +1,7 @@
 import {Color3,DynamicTexture,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 export const storeExit={x:0,z:-4.1};
-export const storeFixtures=[{x:3,z:.8,w:4.4,d:.8,h:2.25},{x:3,z:4.45,w:5.3,d:.75,h:2.75},{x:-2.8,z:4.45,w:3.2,d:.75,h:2.45},{x:-5.45,z:1.05,w:.8,d:3.2,h:2.45},{x:-3.7,z:-2.25,w:3.7,d:1.25,h:1.15},{x:-5.35,z:3.8,w:1.15,d:1,h:2.6},{x:-4.6,z:-4.05,w:1.3,d:1.3,h:.9}];
+export const storeFixtures=[{x:3,z:.8,w:4.4,d:.8,h:2.25},{x:3,z:4.45,w:5.3,d:.75,h:2.75},{x:-2.8,z:4.45,w:3.2,d:.75,h:2.45},{x:-5.45,z:1.05,w:.8,d:3.2,h:2.45},{x:-3.7,z:-2.25,w:3.7,d:1.25,h:1.15},{x:5.35,z:-2.6,w:1,d:1.15,h:2.6},{x:-4.6,z:-4.05,w:1.3,d:1.3,h:.9}];
 export function storeBlocked(x:number,z:number){return Math.abs(x)>5.7||Math.abs(z)>4.65||storeFixtures.some(o=>Math.abs(x-o.x)<o.w/2+.28&&Math.abs(z-o.z)<o.d/2+.28)}
 export function storePath(from:{x:number;z:number},to:{x:number;z:number}){
  const step=.25,nx=47,nz=39,point=(id:number)=>({x:-5.75+(id%nx)*step,z:-4.75+Math.floor(id/nx)*step});
@@ -54,11 +54,15 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
  box('cash register display',-3.9,1.53,-2.3,.48,.32,.045,black);const screen=mat('checkout screen','#b2d7be');screen.emissiveColor=new Color3(.2,.3,.2);box('checkout display face',-3.9,1.53,-2.27,.4,.25,.01,screen);cylinder('checkout monitor support',-3.9,1.36,-2.3,.08,.2,black);box('paper shopping bags',-2.6,1.33,-2.25,.45,.32,.25,packets[5]);
  const notice=mat('checkout blackboard','#243d34');box('chalkboard on counter',-3.6,.67,-2.82,1.35,.66,.02,notice);const chalk=new DynamicTexture('welcome chalk lettering',{width:512,height:256},scene,false);chalk.drawText('Добро пожаловать!',null,94,'32px sans-serif','#fff8d8','#243d34',true);chalk.drawText('Свежие продукты каждый день',null,153,'23px sans-serif','#fff8d8',null,true);notice.diffuseTexture=chalk;
  const fridge=storeFixtures[5];
+ const fridgeRoot=new TransformNode('refrigerator facing open aisle',scene),fridgeSolidStart=solids.length,fridgeGoodsStart=goods.length;
+ const width=fridge.d,depth=fridge.w;
  // Hollow cabinet: shelves and bottles sit inside its side walls and back.
- for(const side of [-1,1])box('refrigerator side',fridge.x+side*(fridge.w/2-.035),fridge.h/2,fridge.z,.07,fridge.h,fridge.d,metal);
- box('refrigerator back',fridge.x,fridge.h/2,fridge.z+fridge.d/2-.035,fridge.w-.14,fridge.h,.07,black);
- for(const y of [.045,fridge.h-.045])box('refrigerator cap',fridge.x,y,fridge.z,fridge.w,.09,fridge.d,metal);
- for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',fridge.x,y,fridge.z,fridge.w-.14,.04,.82,white);for(let i=0;i<4;i++)cylinder('cold juice bottles',fridge.x-.35+i*.23,y+.17,fridge.z-.23,.13,.3,packets[i%2?7:4],true)}
+ for(const side of [-1,1])box('refrigerator side',side*(width/2-.035),fridge.h/2,0,.07,fridge.h,depth,metal);
+ box('refrigerator back',0,fridge.h/2,depth/2-.035,width-.14,fridge.h,.07,black);
+ for(const y of [.045,fridge.h-.045])box('refrigerator cap',0,y,0,width,.09,depth,metal);
+ for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',0,y,0,width-.14,.04,.82,white);for(let i=0;i<4;i++)cylinder('cold juice bottles',-.35+i*.23,y+.17,-.23,.13,.3,packets[i%2?7:4],true)}
+ [...solids.slice(fridgeSolidStart),...goods.slice(fridgeGoodsStart)].forEach(m=>m.parent=fridgeRoot);
+ fridgeRoot.position.set(fridge.x,0,fridge.z);fridgeRoot.rotation.y=Math.PI/2;fridgeRoot.computeWorldMatrix(true);
  cylinder('round oak tasting table',-4.6,.82,-4.05,1.3,.09,oak);cylinder('table pedestal',-4.6,.4,-4.05,.16,.78,metal);
  const leaf=mat('fern leaves','#4f7940'),pot=mat('fern terracotta','#b77850');
  cylinder('large fern pot',1.65,2.165,.8,.38,.25,pot);
