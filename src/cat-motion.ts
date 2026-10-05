@@ -23,7 +23,7 @@ export function createCatMotion(start:CatPoint,nav:CatNavigation,random= Math.ra
  /** Keep still (e.g. while being watered), looking at `towards`. */
  hold(on:boolean,towards?:CatPoint){held=on;if(on){route=[];if(towards)facing=Math.atan2(towards.x-position.x,towards.z-position.z)}},
  /** Run away from a point that is not the dog, such as the player. */
- scare(from:CatPoint){held=false;threat={...from};if(fear===0)fleeCount++;fear=3;route=[];replan=0},
+ scare(from:CatPoint){held=false;threat={x:from.x,z:from.z};if(fear===0)fleeCount++;fear=3;route=[];replan=0},
  update(dt:number,dog:CatPoint){
   if(held){lastDog={x:dog.x,z:dog.z};return {state:'held',facing}}
   if(dt<=0)return {state: fear>0?'run':route.length?'walk':'idle',facing};
