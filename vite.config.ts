@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         game: 'index.html',
         street: 'street.html',
+        store: 'store.html',
         character: 'character.html',
       },
     },

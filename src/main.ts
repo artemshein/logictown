@@ -30,6 +30,7 @@ let returningHome=false;try{returningHome=sessionStorage.getItem('logictown-retu
 const previousLocation=persistLocation?readPlayerLocation():undefined;
 const resumingStreet=!returningHome&&previousLocation?.area==='street';
 if(resumingStreet)location.replace('/street.html');
+if(!returningHome&&previousLocation?.area==='store')location.replace('/store.html');
 let saved:{clue?:boolean;solved?:boolean}={};
 try{saved=JSON.parse(localStorage.getItem('logictown-v1')||'{}')}catch{}
 let clue=!!saved.clue, solved=!!saved.solved;

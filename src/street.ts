@@ -38,6 +38,13 @@ function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.positio
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null;
 const check=!!checkMode;
 const persistLocation=!check;
+let returningFromStore=false;try{returningFromStore=sessionStorage.getItem('logictown-return-store')==='1';sessionStorage.removeItem('logictown-return-store')}catch{}
+if(returningFromStore)lea.position.set(52,.11,-23);
+const storeApproach=new Vector3(52,.11,-24);
+const storeButton=document.createElement('button');storeButton.className='street-swing';storeButton.textContent='Войти в магазин';storeButton.hidden=true;app.append(storeButton);
+function enterStore(){if(transitioning||!nearInteraction(lea.position,storeApproach,2.8))return;transitioning=true;controls.clear();if(persistLocation)savePlayerLocation({version:2,area:'store'});location.assign(check?'/store.html?check=entry':'/store.html')}
+storeButton.onclick=enterStore;
+const storePin=createInteractionMarker(scene,'Войти в магазин','↪',new Vector3(52,1.5,-24.5),enterStore);
 const townOverview=checkMode==='town';
 if(townOverview){homeButton.hidden=true}
 const fenceOverview=checkMode==='fence-white'||checkMode==='fence-wire';
@@ -86,6 +93,7 @@ async function start(){
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
   dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
   dogCommands.update(!transitioning&&!ride.active);
+  const nearStore=nearInteraction(lea.position,storeApproach,2.8)&&!transitioning;storeButton.hidden=!nearStore;storePin.mesh.setEnabled(nearStore);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
   if(overviewHome){camera.target.set(overviewHome.x,3.9,overviewHome.z);camera.alpha=-Math.PI/2;camera.beta=1.47;camera.radius=25}
