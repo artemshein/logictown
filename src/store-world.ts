@@ -13,7 +13,14 @@ export function storePath(from:{x:number;z:number},to:{x:number;z:number}){
  const path=[];for(let id=end;id!==start;id=prev[id])path.push(point(id));return path.reverse();
 }
 export async function buildStore(scene:Scene,shadow:ShadowGenerator){
- const solids:Mesh[]=[],goods:Mesh[]=[];
+ const solids:Mesh[]=[],goods:Mesh[]=[],productRoots:TransformNode[]=[];
+ const [bottleModel,barModel]=await Promise.all(['juice-bottle','chocolate-bar'].map(id=>LoadAssetContainerAsync(`/assets/shop/${id}.glb`,scene)));
+ function product(kind:'bottle'|'bar',x:number,y:number,z:number){
+  const instance=(kind==='bottle'?bottleModel:barModel).instantiateModelsToScene(n=>`shop ${kind} ${n}`,false,{doNotInstantiate:true});
+  const root=new TransformNode('shop product '+kind,scene);instance.rootNodes.forEach(n=>n.parent=root);root.position.set(x,y,z);
+  root.getChildMeshes().forEach(m=>{m.isPickable=false;m.receiveShadows=true;if(m.material&&'environmentIntensity' in m.material)m.material.environmentIntensity=.35;if(m instanceof Mesh&&m.getTotalVertices())goods.push(m)});
+  productRoots.push(root);return root;
+ }
  function mat(name:string,hex:string,asset?:string){const m=new StandardMaterial(name,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=new Color3(.04,.04,.04);if(asset){m.diffuseTexture=new Texture(`/assets/polyhaven/${asset}/color.jpg`,scene);m.bumpTexture=new Texture(`/assets/polyhaven/${asset}/normal.jpg`,scene);m.bumpTexture.level=.25}return m}
  const oak=mat('shop honey oak','#dfb078','wood_table'),floorMat=mat('shop oak planks','#e5c6a3','wooden_floor_01'),plaster=mat('shop ivory plaster','#fff4df','white_plaster_02'),white=mat('counter sage cream','#d5dccc'),black=mat('cash register charcoal','#303638'),metal=mat('shelf brackets','#716e60');
  oak.diffuseColor=Color3.White();oak.diffuseTexture!.level=1.9;
@@ -39,29 +46,34 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
  const packets=labels.map((label,i)=>{const m=mat('product '+label,colours[i]),t=new DynamicTexture('packaging '+label,{width:128,height:128},scene,false),c=t.getContext() as unknown as CanvasRenderingContext2D;c.fillStyle=colours[i];c.fillRect(0,0,128,128);c.fillStyle='#fff2d6';c.fillRect(6,22,116,70);c.fillStyle=colours[i];c.font='bold 20px sans-serif';c.textAlign='center';c.fillText(label,64,51);c.font='13px sans-serif';c.fillText('Тихий город',64,76);c.fillStyle='#fff2d6';c.fillRect(12,103,104,3);t.update();m.diffuseTexture=t;m.diffuseColor=Color3.White();return m});
  const lid=mat('jar metal lids','#c6b695'),cream=mat('price paper','#fff6df');
  const priceTexture=new DynamicTexture('shelf price tickets',{width:256,height:64},scene,false);priceTexture.drawText('89 ₽  ·  120 ₽  ·  65 ₽',null,43,'bold 23px sans-serif','#423624','#fff6df',true);cream.diffuseTexture=priceTexture;
- function shelf(x:number,z:number,w:number,h:number,angle=0){
-  const root=new TransformNode('stocked wooden shelving',scene),start=solids.length,startGoods=goods.length;
+ function shelf(x:number,z:number,w:number,h:number,angle=0,bars=false){
+  const root=new TransformNode('stocked wooden shelving',scene),start=solids.length,startGoods=goods.length,startProducts=productRoots.length;
   box('shelf oak backing',0,h/2,.3,w,h,.07,oak);for(const side of [-1,1])box('shelf solid oak upright',side*(w/2-.06),h/2,0,.12,h,.75,oak);
   for(let row=0;row<5;row++){const y=.15+row*(h-.4)/4;box('solid wooden shelf',0,y,0,w,.08,.75,oak);box('price strip',0,y-.015,-.39,w-.2,.09,.015,cream);
    // Keep the top display shelf free so pots do not intersect the stock.
    if(row===4)continue;
+   if(bars&&(row===1||row===3)){
+    const count=Math.floor((w-.4)/.3);
+    for(let col=0;col<count;col++)for(let depth=0;depth<3;depth++)product('bar',-w/2+.27+col*.3,y+.04,-.24+depth*.18);
+    continue;
+   }
    for(let col=0;col<Math.floor((w-.25)/.24);col++)for(let depth=0;depth<2;depth++){const i=(col+row*3+depth)%packets.length,xx=-w/2+.22+col*.24,zz=-.19+depth*.25,hh=.19+(i%3)*.055;if(i<4){cylinder('preserves and honey jar',xx,y+.04+hh/2,zz,.18,hh,packets[i],true);cylinder('jar screw lid',xx,y+.05+hh,zz,.19,.035,lid,true)}else box('grocery carton',xx,y+.04+hh/2,zz,.19,hh,.19,packets[i],true)}
   }
-  [...solids.slice(start),...goods.slice(startGoods)].forEach(m=>m.parent=root);root.position.set(x,0,z);root.rotation.y=angle;root.computeWorldMatrix(true);
+  [...solids.slice(start),...goods.slice(startGoods)].filter(m=>!m.parent).forEach(m=>m.parent=root);productRoots.slice(startProducts).forEach(n=>n.parent=root);root.position.set(x,0,z);root.rotation.y=angle;root.computeWorldMatrix(true);
  }
- for(const [i,f] of storeFixtures.slice(0,4).entries())shelf(f.x,f.z,i===3?f.d:f.w,f.h,i===3?-Math.PI/2:0);
+ for(const [i,f] of storeFixtures.slice(0,4).entries())shelf(f.x,f.z,i===3?f.d:f.w,f.h,i===3?-Math.PI/2:0,i===0||i===2);
  box('checkout cabinet',-3.7,.53,-2.25,3.5,1.06,1.1,white);box('checkout oak worktop',-3.7,1.11,-2.25,3.7,.12,1.25,oak);box('checkout kickboard',-3.7,.1,-2.83,3.45,.18,.07,oak);box('register drawer',-3.9,1.24,-2.25,.55,.14,.4,black);
  box('cash register display',-3.9,1.53,-2.3,.48,.32,.045,black);const screen=mat('checkout screen','#b2d7be');screen.emissiveColor=new Color3(.2,.3,.2);box('checkout display face',-3.9,1.53,-2.27,.4,.25,.01,screen);cylinder('checkout monitor support',-3.9,1.36,-2.3,.08,.2,black);box('paper shopping bags',-2.6,1.33,-2.25,.45,.32,.25,packets[5]);
  const notice=mat('checkout blackboard','#243d34');box('chalkboard on counter',-3.6,.67,-2.82,1.35,.66,.02,notice);const chalk=new DynamicTexture('welcome chalk lettering',{width:512,height:256},scene,false);chalk.drawText('Добро пожаловать!',null,94,'32px sans-serif','#fff8d8','#243d34',true);chalk.drawText('Свежие продукты каждый день',null,153,'23px sans-serif','#fff8d8',null,true);notice.diffuseTexture=chalk;
  const fridge=storeFixtures[5];
- const fridgeRoot=new TransformNode('refrigerator facing open aisle',scene),fridgeSolidStart=solids.length,fridgeGoodsStart=goods.length;
+ const fridgeRoot=new TransformNode('refrigerator facing open aisle',scene),fridgeSolidStart=solids.length,fridgeGoodsStart=goods.length,fridgeProductStart=productRoots.length;
  const width=fridge.d,depth=fridge.w;
  // Hollow cabinet: shelves and bottles sit inside its side walls and back.
  for(const side of [-1,1])box('refrigerator side',side*(width/2-.035),fridge.h/2,0,.07,fridge.h,depth,metal);
  box('refrigerator back',0,fridge.h/2,depth/2-.035,width-.14,fridge.h,.07,black);
  for(const y of [.045,fridge.h-.045])box('refrigerator cap',0,y,0,width,.09,depth,metal);
- for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',0,y,0,width-.14,.04,.82,white);for(let i=0;i<4;i++)cylinder('cold juice bottles',-.35+i*.23,y+.17,-.23,.13,.3,packets[i%2?7:4],true)}
- [...solids.slice(fridgeSolidStart),...goods.slice(fridgeGoodsStart)].forEach(m=>m.parent=fridgeRoot);
+ for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',0,y,0,width-.14,.04,.82,white);for(let i=0;i<4;i++)for(const z of [-.24,.14])product('bottle',-.35+i*.23,y+.02,z)}
+ [...solids.slice(fridgeSolidStart),...goods.slice(fridgeGoodsStart)].filter(m=>!m.parent).forEach(m=>m.parent=fridgeRoot);productRoots.slice(fridgeProductStart).forEach(n=>n.parent=fridgeRoot);
  fridgeRoot.position.set(fridge.x,0,fridge.z);fridgeRoot.rotation.y=Math.PI/2;fridgeRoot.computeWorldMatrix(true);
  cylinder('round oak tasting table',-4.6,.82,-4.05,1.3,.09,oak);cylinder('table pedestal',-4.6,.4,-4.05,.16,.78,metal);
  const leaf=mat('fern leaves','#4f7940'),pot=mat('fern terracotta','#b77850');

@@ -1,0 +1,9 @@
+{
+  "author": "Logictown",
+  "license": "CC0-1.0",
+  "models": [
+    "juice-bottle.glb",
+    "chocolate-bar.glb"
+  ],
+  "description": "Original product geometry and packaging artwork. Dimensions in metres; models rest on y=0."
+}

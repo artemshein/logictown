@@ -39,6 +39,7 @@ async function start(){
   if(checkMode==='overview'){camera.target.set(0,1.3,.5);camera.alpha=-Math.PI/2-.38;camera.beta=1.3;camera.radius=6.2}
   if(checkMode==='fixtures'){camera.target.set(-4,1.25,2.8);camera.alpha=-Math.PI/2+.5;camera.beta=1.3;camera.radius=4.5}
   if(checkMode==='fridge'){camera.target.set(5,1.25,-2.6);camera.alpha=Math.PI;camera.beta=1.3;camera.radius=3.3}
+  if(checkMode==='products'){camera.target.set(2.5,1.05,.8);camera.alpha=-Math.PI/2+.35;camera.beta=1.3;camera.radius=2.8}
   const nearExit=!transitioning&&nearInteraction(lea.position,storeExit,1.8);exitButton.hidden=!nearExit;exitMarker.mesh.setEnabled(nearExit);scene.render();locationSaver.tick(dt);
  });
 }
