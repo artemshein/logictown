@@ -1,5 +1,6 @@
 import {Color3,DynamicTexture,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
+import {shopProducts} from './store-shopping';
 export const storeExit={x:0,z:-4.1};
 export const cashierPosition={x:-2.85,z:-1.05};
 export const storeFixtures=[{x:3,z:.8,w:4.4,d:.8,h:2.25},{x:3,z:4.45,w:5.3,d:.75,h:2.75},{x:-2.8,z:4.45,w:3.2,d:.75,h:2.45},{x:-5.45,z:1.05,w:.8,d:3.2,h:2.45},{x:-3.7,z:-2.25,w:3.7,d:1.25,h:1.15},{x:5.35,z:-2.6,w:1,d:1.15,h:2.6},{x:-4.6,z:-4.05,w:1.3,d:1.3,h:.9}];
@@ -50,7 +51,7 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
  const packets=labels.map((label,i)=>{const m=mat('product '+label,colours[i]),t=new DynamicTexture('packaging '+label,{width:128,height:128},scene,false),c=t.getContext() as unknown as CanvasRenderingContext2D;c.fillStyle=colours[i];c.fillRect(0,0,128,128);c.fillStyle='#fff2d6';c.fillRect(6,22,116,70);c.fillStyle=colours[i];c.font='bold 20px sans-serif';c.textAlign='center';c.fillText(label,64,51);c.font='13px sans-serif';c.fillText('Тихий город',64,76);c.fillStyle='#fff2d6';c.fillRect(12,103,104,3);t.update();m.diffuseTexture=t;m.diffuseColor=Color3.White();return m});
  const lid=mat('jar metal lids','#c6b695'),cream=mat('price paper','#fff6df');
  // Each ticket has the same 4:1 aspect ratio in pixels and in the scene.
- const prices=[89,120,65,149,99,79,110,59];
+ const prices=shopProducts.slice(0,8).map(product=>product.price);
  const priceCards=prices.map(price=>{const m=mat('price ticket '+price,'#ffffff'),t=new DynamicTexture('price '+price,{width:512,height:128},scene,false),c=t.getContext() as unknown as CanvasRenderingContext2D;c.fillStyle='#fff6df';c.fillRect(0,0,512,128);c.strokeStyle='#d4c6a6';c.lineWidth=4;c.strokeRect(2,2,508,124);c.fillStyle='#423624';c.font='bold 76px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(price+' ₽',256,66);t.update();m.diffuseTexture=t;m.emissiveColor=new Color3(.12,.12,.12);return m});
  function shelf(x:number,z:number,w:number,h:number,angle=0,bars=false){
   const root=new TransformNode('stocked wooden shelving',scene),start=solids.length,startGoods=goods.length,startProducts=productRoots.length;
@@ -59,7 +60,7 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
    // Keep the top display shelf free so pots do not intersect the stock.
    if(row===4)continue;
    const snackRow=bars&&(row===1||row===3),spacing=snackRow ? .3 : .24,count=Math.floor((w-(snackRow ? .4 : .25))/spacing);
-   for(let col=0;col<count;col++){const priceIndex=snackRow?(col+row)%4:(col+row*3)%packets.length;box('individual price ticket',-w/2+(snackRow ? .27 : .22)+col*spacing,y-.015,-.401,.216,.054,.004,priceCards[priceIndex]);}
+   for(let col=0;col<count;col++){const priceIndex=snackRow?0:(col+row*3)%packets.length;box('individual price ticket',-w/2+(snackRow ? .27 : .22)+col*spacing,y-.015,-.401,.216,.054,.004,priceCards[priceIndex]);}
    if(bars&&(row===1||row===3)){
     const count=Math.floor((w-.4)/.3);
     for(let col=0;col<count;col++)for(let depth=0;depth<3;depth++)product('bar',-w/2+.27+col*.3,y+.04,-.24+depth*.18,col+row+depth);
