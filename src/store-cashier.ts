@@ -26,5 +26,6 @@ export async function loadStoreCashier(scene:Scene,shadow:ShadowGenerator,assetU
   root.rotation.y=Math.PI+Math.sin(elapsed*.55)*.018;
  });
  scene.onDisposeObservable.add(()=>scene.onBeforeRenderObservable.remove(breathing));
- return {root,idle,position:new Vector3(cashierPosition.x,.01,cashierPosition.z)};
+ const head=asset.transformNodes.find(node=>/:Head_/.test(node.name));
+ return {root,idle,head,position:new Vector3(cashierPosition.x,.01,cashierPosition.z)};
 }

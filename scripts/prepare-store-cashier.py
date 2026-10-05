@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 from mathutils import Vector, Matrix, Quaternion
 from mathutils.kdtree import KDTree
+from mathutils.bvhtree import BVHTree
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'art'/'cashier';OUT.mkdir(parents=True,exist_ok=True)
@@ -117,7 +118,8 @@ for z,rx,ry,cy in shirt_rings:
   a=i/segments*math.tau;verts.append((rx*math.cos(a),cy+ry*math.sin(a),z))
 for j in range(len(shirt_rings)-1):
  for i in range(segments):a=j*segments+i;b=j*segments+(i+1)%segments;faces.append((a,b,b+segments,a+segments))
-torso_weights(mesh_part('Continuous cotton shirt body',verts,faces,ivory))
+shirt_body=mesh_part('Continuous cotton shirt body',verts,faces,ivory)
+torso_weights(shirt_body)
 
 for side in [-1,1]:
  verts=[];faces=[];n=32
@@ -135,14 +137,31 @@ for side in [-1,1]:
  for g in obj.vertex_groups:g.remove(list(range(len(obj.data.vertices))))
  obj.vertex_groups[bone.name].add(list(range(len(obj.data.vertices))),1,'REPLACE')
 
+bpy.context.view_layer.update()
+def surface_tree(obj):
+ return BVHTree.FromPolygons([obj.matrix_world@v.co for v in obj.data.vertices],[list(p.vertices) for p in obj.data.polygons])
+shirt_surface=surface_tree(shirt_body);pants_surface=surface_tree(pants)
 def apron_y(x,z):
- # Keep the bib clear of the chest and let the skirt hang over the thighs.
- if z>1.08:
-  near=[skin.matrix_world@v.co for v in skin.data.vertices if abs((skin.matrix_world@v.co).z-z)<.065 and abs((skin.matrix_world@v.co).x-x)<.06]
-  return min([p.y for p in near]+[-.142])-.025
- return -.155+.065*(x/.22)**2
+ # Upper fabric follows the shirt; the skirt bridges both legs as one panel.
+ if z>=.97:
+  hit=shirt_surface.ray_cast(Vector((x,-1,z)),Vector((0,1,0)))[0]
+  if hit:return hit.y-.004
+ nearby=[pants.matrix_world@v.co for v in pants.data.vertices if abs((pants.matrix_world@v.co).z-z)<.08]
+ probes=[pants_surface.ray_cast(Vector((xx,-1,z)),Vector((0,1,0)))[0] for xx in [-.18,-.15,-.12,-.09,-.06,-.03,0,.03,.06,.09,.12,.15,.18]]
+ front=min([p.y for p in nearby]+[p.y for p in probes if p is not None]+[-.035])-.009
+ skirt_y=.025-(.025-front)*math.sqrt(max(0,1-(x/.24)**2))
+ # Blend into the shirt hem continuously, avoiding a step at the waist.
+ hem=shirt_surface.ray_cast(Vector((x,-1,.971)),Vector((0,1,0)))[0]
+ t=max(0,min(1,(z-.79)/(.97-.79)));t=t*t*(3-2*t)
+ return skirt_y*(1-t)+((hem.y-.004) if hem else skirt_y)*t
 
-rows=[(.69,.205),(.78,.20),(.9,.19),(1.02,.165),(1.08,.14),(1.15,.105),(1.26,.105),(1.36,.105)]
+outline=[(.69,.18),(.78,.185),(.9,.19),(1.02,.165),(1.08,.14),(1.15,.105),(1.26,.105),(1.36,.105)]
+rows=[]
+for i in range(41):
+ z=.69+i*(1.36-.69)/40
+ k=next((j for j in range(len(outline)-1) if z<=outline[j+1][0]),len(outline)-2)
+ t=(z-outline[k][0])/(outline[k+1][0]-outline[k][0]);width=outline[k][1]*(1-t)+outline[k+1][1]*t
+ rows.append((z,width))
 verts=[];faces=[];cols=16
 for z,width in rows:
  for i in range(cols+1):
@@ -158,7 +177,7 @@ verts=[];faces=[]
 for j in range(5):
  z=.83+j*.027
  for i in range(9):
-  x=-.095+i*.02375;verts.append((x,apron_y(x,z)-.007-.004*math.sin(i/8*math.pi),z))
+  x=-.095+i*.02375;verts.append((x,apron_y(x,z)-.003-.002*math.sin(i/8*math.pi),z))
 for j in range(4):
  for i in range(8):a=j*9+i;faces.append((a,a+1,a+10,a+9))
 torso_weights(mesh_part('Apron patch pocket',verts,faces,green))
@@ -168,20 +187,36 @@ def ribbon(name,path,width,material):
  for x,y,z in path:verts.extend([(x-width/2,y,z),(x+width/2,y,z)])
  for i in range(len(path)-1):a=i*2;faces.append((a,a+1,a+3,a+2))
  return mesh_part(name,verts,faces,material)
+def shirt_radius(z):
+ k=next((i for i in range(len(shirt_rings)-1) if z<=shirt_rings[i+1][0]),len(shirt_rings)-2)
+ t=max(0,min(1,(z-shirt_rings[k][0])/(shirt_rings[k+1][0]-shirt_rings[k][0])))
+ return [shirt_rings[k][a]*(1-t)+shirt_rings[k+1][a]*t for a in [1,2,3]]
 for side in [-1,1]:
- ribbon('Apron shoulder strap',[(side*.087,-.17,1.345),(side*.10,-.10,1.40),(side*.095,-.025,1.443),(side*.09,.035,1.451),(side*.09,.12,1.415),(side*.087,.13,1.08)],.026,green)
+ path=[]
+ for i in range(13):
+  z=1.345+i*.095/12;rx,ry,cy=shirt_radius(z);x=side*.087
+  path.append((x,cy-ry*math.sqrt(max(0,1-(x/rx)**2))-.004,z))
+ for i in range(1,13):
+  a=-math.pi/2+i*math.pi/12
+  path.append((side*.087,.035+.025*math.sin(a),1.44+.008*math.cos(a)))
+ for i in range(1,25):
+  z=1.44-i*.36/24;rx,ry,cy=shirt_radius(z);x=side*.087
+  path.append((x,cy+ry*math.sqrt(max(0,1-(x/rx)**2))+.004,z))
+ torso_weights(ribbon('Apron shoulder strap',path,.022,green))
 
 # Sewn waist tie runs around the shirt.
 verts=[];faces=[]
 for i in range(65):
- a=i/64*math.tau;x=.212*math.cos(a);y=.025+.15*math.sin(a)
- verts.extend([(x,y,1.005),(x,y,1.044)])
+ a=i/64*math.tau
+ for z in [1.005,1.035]:
+  rx,ry,cy=shirt_radius(z);verts.append(((rx+.003)*math.cos(a),cy+(ry+.003)*math.sin(a),z))
 for i in range(64):a=i*2;faces.append((a,a+1,a+3,a+2))
 torso_weights(mesh_part('Apron waist tie',verts,faces,green))
 
 def joint(part):return next(p for p in rig.pose.bones if (':'+part+'_') in p.name)
 def world_turn(p,axis,angle):
- local=(rig.matrix_world.to_3x3()@p.bone.matrix_local.to_3x3()).inverted()@Vector(axis)
+ bpy.context.view_layer.update()
+ local=(rig.matrix_world.to_3x3()@p.matrix.to_3x3()).inverted()@Vector(axis)
  p.rotation_mode='QUATERNION';p.rotation_quaternion=Quaternion(local.normalized(),angle)
 
 scene=bpy.context.scene;scene.render.fps=30
@@ -190,10 +225,12 @@ for frame in range(1,242,4):
  t=(frame-1)/240;phase=t*math.tau
  for p in rig.pose.bones:p.matrix_basis.identity();p.rotation_mode='QUATERNION'
  for side,sign in [('Left',1),('Right',-1)]:
-  world_turn(joint(side+'Arm'),(0,1,0),sign*(.88+.018*math.sin(phase)))
-  world_turn(joint(side+'ForeArm'),(1,0,0),-.18+.025*math.sin(phase+.7))
- world_turn(joint('Spine2'),(1,0,0),.012*math.sin(phase))
- world_turn(joint('Head'),(0,0,1),.055*math.sin(phase))
+  world_turn(joint(side+'Arm'),(0,1,0),sign*(.88+.045*math.sin(phase)))
+  # Briefly lift one hand in a welcoming gesture, then relax it again.
+  gesture=max(0,math.sin(phase))**3 if side=='Right' else 0
+  world_turn(joint(side+'ForeArm'),(1,0,0),-.18-1.9*gesture+.05*math.sin(phase+.7))
+ world_turn(joint('Spine2'),(1,0,0),.027*math.sin(phase))
+ world_turn(joint('Head'),(0,0,1),.16*math.sin(phase))
  for p in rig.pose.bones:p.keyframe_insert('rotation_quaternion',frame=frame,group=p.name)
 act.use_fake_user=True
 scene.frame_set(1)
