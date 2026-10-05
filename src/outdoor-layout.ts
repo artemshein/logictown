@@ -9,6 +9,9 @@ export const outdoorEntrance={x:0,z:-5.8};
 export const outdoorDoor={x:0,z:-4.3};
 export const outdoorStore={x:52,z:-32.4,angle:Math.PI,...outdoorStoreDimensions};
 export const outdoorSwing={x:4,z:11};
+// Flower beds under the front windows of Lea's home; the can waits behind the western neighbour.
+export const outdoorFlowerBeds=[{x:-3.9,z:-4.75,w:2.6,d:.8},{x:3.9,z:-4.75,w:2.6,d:.8}];
+export const outdoorWateringCan={x:-24.5,z:9.6};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=outdoorHouseProfiles[h.model as keyof typeof outdoorHouseProfiles];return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});
 export const outdoorTrees=outdoorHomes.flatMap(home=>{
  const front=home.angle===0?-1:1,back=-front;
@@ -38,6 +41,7 @@ export const outdoorObstacles:OutdoorObstacle[]=[
  ...outdoorHomes.map(h=>({...h,kind:'house'})),...outdoorFences,
  ...outdoorTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),
  {...outdoorSwing,w:4,d:2.7,kind:'swing'},
+ ...outdoorFlowerBeds.map(b=>({...b,kind:'flowerbed'})),
 ];
 export function outdoorBlocked(x:number,z:number){return x< -63||x>63||z< -48||z>15||outdoorObstacles.some(o=>Math.abs(x-o.x)<o.w/2+.25-1e-6&&Math.abs(z-o.z)<o.d/2+.25-1e-6)}
 const step=.5,ox=-63,oz=-48,nx=253,nz=127;

@@ -69,5 +69,9 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
     const targets=[a,b].sort((a,b)=>Vector3.Dot(a.subtract(b),right));
     gripErrors=arms.map((arm,i)=>placePalm(arm.joints,arm.palm,targets[i]));return gripErrors;
   };
-  return {get gripError(){return Math.max(...gripErrors)},gripSwing,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
+  const reach=(side:'Left'|'Right',target:Vector3)=>{const arm=gripArms[side==='Left'?0:1];return placePalm(arm.joints,arm.palm,target)};
+  const palm=(side:'Left'|'Right')=>{const p=gripArms[side==='Left'?0:1].palm;p.computeWorldMatrix(true);return p.getAbsolutePosition().clone()};
+  // Return to the base pose of the current clip after scripted reaching.
+  const relax=()=>{const clip=active;active=undefined;if(clip)play(clip)};
+  return {get gripError(){return Math.max(...gripErrors)},gripSwing,reach,palm,relax,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
 }
