@@ -13,9 +13,9 @@ export async function loadStreetCat(scene:Scene,shadow:ShadowGenerator,nav:CatNa
  let playing='',state='idle';
  const play=(name:string)=>{if(playing===name)return;result.animationGroups.forEach(g=>g.stop());result.animationGroups.find(g=>g.name.split('|').at(-1)===name)?.start(true,name==='Run'?2.6:1);playing=name};
  root.position.set(motion.position.x,.035,motion.position.z);play('Idle');
- return {root,get closingSpeed(){return motion.closingSpeed},get state(){return state},get fleeCount(){return motion.fleeCount},update(dt:number,dog:CatPoint){
+ return {root,hold(on:boolean,towards?:CatPoint){motion.hold(on,towards)},scare(from:CatPoint){motion.scare(from)},get closingSpeed(){return motion.closingSpeed},get state(){return state},get fleeCount(){return motion.fleeCount},update(dt:number,dog:CatPoint){
   const next=motion.update(dt,dog);state=next.state;root.position.x=motion.position.x;root.position.z=motion.position.z;
   root.rotation.y+=Math.atan2(Math.sin(next.facing-root.rotation.y),Math.cos(next.facing-root.rotation.y))*Math.min(1,dt*12);
-  play(state==='run'?'Run':state==='walk'?'Walk':'Idle');
+  play(state==='run'?'Run':state==='walk'?'Walk':state==='held'?'IdleTailSwoosh':'Idle');
  }};
 }
