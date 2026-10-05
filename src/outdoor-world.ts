@@ -1,6 +1,7 @@
 import {Color3,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,Vector3,VertexBuffer,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import {createGardenPaint} from './outdoor-colors';
+import {OutdoorGroundBlend} from './outdoor-ground-blend';
 import {outdoorStore,outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
 export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  const texture=(name:string)=>{
@@ -18,6 +19,7 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  function ground(name:string,x:number,z:number,w:number,d:number,y:number,material:StandardMaterial){
   const mesh=MeshBuilder.CreateGround(name,{width:w,height:d},scene);mesh.position.set(x,y,z);const surface=material.clone(name+' material') as StandardMaterial;mesh.material=surface;
   for(const t of [surface.diffuseTexture,surface.bumpTexture])if(t instanceof Texture){const map=t.clone();map.uScale=w/3;map.vScale=d/3;if(t===surface.diffuseTexture)surface.diffuseTexture=map;else surface.bumpTexture=map}
+  new OutdoorGroundBlend(surface);
   mesh.receiveShadows=true;floors.push(mesh);return mesh;
  }
  // Keep the lawn colour consistent all the way to the panorama.
