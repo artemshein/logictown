@@ -1,9 +1,11 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import sharp from 'sharp';
+const modelRecipes=new Map();
 
 // Original product meshes, in metres, with their base at y=0.
 // Small standalone GLBs let the shop instance actual products at known sizes.
 async function saveModel(name,parts,materials,images){
+ modelRecipes.set(name,{parts,materials,images});
  const chunks=[],views=[],accessors=[];let offset=0;
  const append=bytes=>{const index=views.length;views.push({buffer:0,byteOffset:offset,byteLength:bytes.length});const padded=Buffer.alloc(Math.ceil(bytes.length/4)*4);bytes.copy(padded);chunks.push(padded);offset+=padded.length;return index};
  const accessor=(values,size,type)=>{const data=type===5123?new Uint16Array(values):new Float32Array(values);const index=accessors.length,entry={bufferView:append(Buffer.from(data.buffer)),componentType:type,count:values.length/size,type:({1:'SCALAR',2:'VEC2',3:'VEC3'})[size]};if(size===3&&type===5126){entry.min=[0,1,2].map(a=>Math.min(...values.filter((_,i)=>i%3===a)));entry.max=[0,1,2].map(a=>Math.max(...values.filter((_,i)=>i%3===a)))}accessors.push(entry);return index};
@@ -43,5 +45,26 @@ for(let i=0;i<=8;i++){const z=-.035+i*.07/8,y=.023+.023*Math.sqrt(1-(z/.044)**2)
 for(let i=0;i<8;i++){const a=i*2;label.indices.push(a,a+2,a+1,a+1,a+2,a+3)}
 const seals=[];for(const side of [-1,1])for(let i=0;i<8;i++){const x0=side>0?.109:-.13,x1=side>0?.13:-.109,z=-.043+i*.01075;seals.push(plane([[x0,.033,z],[x1,.033,z],[x1,.033,z+.005],[x0,.033,z+.005]],2))}
 await saveModel('chocolate-bar',[bar,label,...seals],[colour('burgundy foil wrapper',[.3,.04,.08,1],.4),{name:'printed chocolate wrapper',doubleSided:true,pbrMetallicRoughness:{baseColorTexture:{index:0},metallicFactor:0,roughnessFactor:.6}},colour('crimped gold seals',[.7,.5,.2,1],.3)],[barLabel]);
-await writeFile('public/assets/shop/credits.json',JSON.stringify({author:'Logictown',license:'CC0-1.0',models:['juice-bottle.glb','chocolate-bar.glb'],description:'Original product geometry and packaging artwork. Dimensions in metres; models rest on y=0.'},null,2)+'\n');
+const bottleRecipe=modelRecipes.get('juice-bottle'),barRecipe=modelRecipes.get('chocolate-bar');
+for(const [suffix,hex,body,cap,flavour] of [
+ ['apple','#639344',[.3,.55,.12,1],[.1,.35,.12,1],'ЯБЛОЧНЫЙ'],
+ ['orange','#e58a27',[.95,.38,.035,1],[.8,.25,.015,1],'АПЕЛЬСИНОВЫЙ'],
+ ['berry','#bd3c55',[.65,.035,.09,1],[.5,.025,.06,1],'ЯГОДНЫЙ'],
+ ['grape','#8553a7',[.33,.09,.55,1],[.24,.04,.4,1],'ВИНОГРАДНЫЙ'],
+]){
+ const materials=structuredClone(bottleRecipe.materials);materials[0].pbrMetallicRoughness.baseColorFactor=body;materials[2].pbrMetallicRoughness.baseColorFactor=cap;
+ const artwork=bottleLabel.replace('#eaba4c',hex).replace('#d98531',hex).replace('ЯБЛОЧНЫЙ',flavour);
+ await saveModel('juice-bottle-'+suffix,bottleRecipe.parts,materials,[artwork]);
+}
+for(const [suffix,hex,body,flavour] of [
+ ['nut','#6d2637',[.3,.04,.08,1],'ШОКОЛАД · ОРЕХ'],
+ ['milk','#2866b2',[.025,.14,.5,1],'МОЛОЧНЫЙ ШОКОЛАД'],
+ ['cereal','#408647',[.035,.32,.065,1],'ЗЛАКИ · ОРЕХ'],
+ ['caramel','#d58d28',[.7,.3,.025,1],'ШОКОЛАД · КАРАМЕЛЬ'],
+]){
+ const materials=structuredClone(barRecipe.materials);materials[0].pbrMetallicRoughness.baseColorFactor=body;
+ const artwork=barLabel.replace('#6d2637',hex).replace('ШОКОЛАД · ОРЕХ',flavour);
+ await saveModel('chocolate-bar-'+suffix,barRecipe.parts,materials,[artwork]);
+}
+await writeFile('public/assets/shop/credits.json',JSON.stringify({author:'Logictown',license:'CC0-1.0',models:[...modelRecipes.keys()].map(name=>name+'.glb'),description:'Original product geometry and packaging artwork. Dimensions in metres; models rest on y=0.'},null,2)+'\n');
 console.log('Created juice-bottle.glb and chocolate-bar.glb');

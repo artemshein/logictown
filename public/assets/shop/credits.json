@@ -3,7 +3,15 @@
   "license": "CC0-1.0",
   "models": [
     "juice-bottle.glb",
-    "chocolate-bar.glb"
+    "chocolate-bar.glb",
+    "juice-bottle-apple.glb",
+    "juice-bottle-orange.glb",
+    "juice-bottle-berry.glb",
+    "juice-bottle-grape.glb",
+    "chocolate-bar-nut.glb",
+    "chocolate-bar-milk.glb",
+    "chocolate-bar-cereal.glb",
+    "chocolate-bar-caramel.glb"
   ],
   "description": "Original product geometry and packaging artwork. Dimensions in metres; models rest on y=0."
 }

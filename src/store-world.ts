@@ -14,9 +14,12 @@ export function storePath(from:{x:number;z:number},to:{x:number;z:number}){
 }
 export async function buildStore(scene:Scene,shadow:ShadowGenerator){
  const solids:Mesh[]=[],goods:Mesh[]=[],productRoots:TransformNode[]=[];
- const [bottleModel,barModel]=await Promise.all(['juice-bottle','chocolate-bar'].map(id=>LoadAssetContainerAsync(`/assets/shop/${id}.glb`,scene)));
- function product(kind:'bottle'|'bar',x:number,y:number,z:number){
-  const instance=(kind==='bottle'?bottleModel:barModel).instantiateModelsToScene(n=>`shop ${kind} ${n}`,false,{doNotInstantiate:true});
+ const [bottleModels,barModels]=await Promise.all([
+  Promise.all(['apple','orange','berry','grape'].map(id=>LoadAssetContainerAsync(`/assets/shop/juice-bottle-${id}.glb`,scene))),
+  Promise.all(['nut','milk','cereal','caramel'].map(id=>LoadAssetContainerAsync(`/assets/shop/chocolate-bar-${id}.glb`,scene))),
+ ]);
+ function product(kind:'bottle'|'bar',x:number,y:number,z:number,variant=0){
+  const instance=(kind==='bottle'?bottleModels:barModels)[variant%4].instantiateModelsToScene(n=>`shop ${kind} ${n}`,false,{doNotInstantiate:true});
   const root=new TransformNode('shop product '+kind,scene);instance.rootNodes.forEach(n=>n.parent=root);root.position.set(x,y,z);
   root.getChildMeshes().forEach(m=>{m.isPickable=false;m.receiveShadows=true;if(m.material&&'environmentIntensity' in m.material)m.material.environmentIntensity=.35;if(m instanceof Mesh&&m.getTotalVertices())goods.push(m)});
   productRoots.push(root);return root;
@@ -54,7 +57,7 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
    if(row===4)continue;
    if(bars&&(row===1||row===3)){
     const count=Math.floor((w-.4)/.3);
-    for(let col=0;col<count;col++)for(let depth=0;depth<3;depth++)product('bar',-w/2+.27+col*.3,y+.04,-.24+depth*.18);
+    for(let col=0;col<count;col++)for(let depth=0;depth<3;depth++)product('bar',-w/2+.27+col*.3,y+.04,-.24+depth*.18,col+row+depth);
     continue;
    }
    for(let col=0;col<Math.floor((w-.25)/.24);col++)for(let depth=0;depth<2;depth++){const i=(col+row*3+depth)%packets.length,xx=-w/2+.22+col*.24,zz=-.19+depth*.25,hh=.19+(i%3)*.055;if(i<4){cylinder('preserves and honey jar',xx,y+.04+hh/2,zz,.18,hh,packets[i],true);cylinder('jar screw lid',xx,y+.05+hh,zz,.19,.035,lid,true)}else box('grocery carton',xx,y+.04+hh/2,zz,.19,hh,.19,packets[i],true)}
@@ -72,7 +75,7 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
  for(const side of [-1,1])box('refrigerator side',side*(width/2-.035),fridge.h/2,0,.07,fridge.h,depth,metal);
  box('refrigerator back',0,fridge.h/2,depth/2-.035,width-.14,fridge.h,.07,black);
  for(const y of [.045,fridge.h-.045])box('refrigerator cap',0,y,0,width,.09,depth,metal);
- for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',0,y,0,width-.14,.04,.82,white);for(let i=0;i<4;i++)for(const z of [-.24,.14])product('bottle',-.35+i*.23,y+.02,z)}
+ for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',0,y,0,width-.14,.04,.82,white);for(let i=0;i<4;i++)for(const z of [-.24,.14])product('bottle',-.35+i*.23,y+.02,z,i+row+(z>0?2:0))}
  [...solids.slice(fridgeSolidStart),...goods.slice(fridgeGoodsStart)].filter(m=>!m.parent).forEach(m=>m.parent=fridgeRoot);productRoots.slice(fridgeProductStart).forEach(n=>n.parent=fridgeRoot);
  fridgeRoot.position.set(fridge.x,0,fridge.z);fridgeRoot.rotation.y=Math.PI/2;fridgeRoot.computeWorldMatrix(true);
  cylinder('round oak tasting table',-4.6,.82,-4.05,1.3,.09,oak);cylinder('table pedestal',-4.6,.4,-4.05,.16,.78,metal);
