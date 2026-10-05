@@ -37,6 +37,7 @@ async function start(){
   else if(route.length){const delta=route[0].subtract(lea.position),dist=delta.length(),travel=Math.min(dist,dt*2.7);if(dist<.02)route.shift();else{const x=lea.position.x+delta.x*travel/dist,z=lea.position.z+delta.z*travel/dist;if(!storeBlocked(x,z)){lea.position.x=x;lea.position.z=z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13)}else route=[]}}
   character.play(moving?'Walk':'Idle');camera.target.set(lea.position.x,1.15,lea.position.z);camera.alpha=-Math.PI/2-lea.rotation.y;camera.radius=cameraDistance(camera.target,outdoorCameraDirection(camera.alpha,camera.beta),3.5,walls);
   if(checkMode==='overview'){camera.target.set(0,1.3,.5);camera.alpha=-Math.PI/2-.38;camera.beta=1.3;camera.radius=6.2}
+  if(checkMode==='fixtures'){camera.target.set(-4,1.25,2.8);camera.alpha=-Math.PI/2+.5;camera.beta=1.3;camera.radius=4.5}
   const nearExit=!transitioning&&nearInteraction(lea.position,storeExit,1.8);exitButton.hidden=!nearExit;exitMarker.mesh.setEnabled(nearExit);scene.render();locationSaver.tick(dt);
  });
 }

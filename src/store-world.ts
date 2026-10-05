@@ -1,7 +1,7 @@
 import {Color3,DynamicTexture,LoadAssetContainerAsync,Mesh,MeshBuilder,StandardMaterial,Texture,TransformNode,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 export const storeExit={x:0,z:-4.1};
-export const storeFixtures=[{x:3,z:.8,w:4.4,d:.8,h:2.25},{x:3,z:4.45,w:5.3,d:.75,h:2.75},{x:-3.5,z:4.45,w:4,d:.75,h:2.45},{x:-5.45,z:1.3,w:.8,d:3.8,h:2.45},{x:-3.7,z:-2.25,w:3.5,d:1.1,h:1.15},{x:-5.35,z:3.8,w:1.15,d:1.8,h:2.65},{x:-4.6,z:-4.05,w:1.3,d:1.3,h:.9}];
+export const storeFixtures=[{x:3,z:.8,w:4.4,d:.8,h:2.25},{x:3,z:4.45,w:5.3,d:.75,h:2.75},{x:-2.8,z:4.45,w:3.2,d:.75,h:2.45},{x:-5.45,z:1.05,w:.8,d:3.2,h:2.45},{x:-3.7,z:-2.25,w:3.7,d:1.25,h:1.15},{x:-5.35,z:3.8,w:1.15,d:1,h:2.6},{x:-4.6,z:-4.05,w:1.3,d:1.3,h:.9}];
 export function storeBlocked(x:number,z:number){return Math.abs(x)>5.7||Math.abs(z)>4.65||storeFixtures.some(o=>Math.abs(x-o.x)<o.w/2+.28&&Math.abs(z-o.z)<o.d/2+.28)}
 export function storePath(from:{x:number;z:number},to:{x:number;z:number}){
  const step=.25,nx=47,nz=39,point=(id:number)=>({x:-5.75+(id%nx)*step,z:-4.75+Math.floor(id/nx)*step});
@@ -43,21 +43,28 @@ export async function buildStore(scene:Scene,shadow:ShadowGenerator){
   const root=new TransformNode('stocked wooden shelving',scene),start=solids.length,startGoods=goods.length;
   box('shelf oak backing',0,h/2,.3,w,h,.07,oak);for(const side of [-1,1])box('shelf solid oak upright',side*(w/2-.06),h/2,0,.12,h,.75,oak);
   for(let row=0;row<5;row++){const y=.15+row*(h-.4)/4;box('solid wooden shelf',0,y,0,w,.08,.75,oak);box('price strip',0,y-.015,-.39,w-.2,.09,.015,cream);
+   // Keep the top display shelf free so pots do not intersect the stock.
+   if(row===4)continue;
    for(let col=0;col<Math.floor((w-.25)/.24);col++)for(let depth=0;depth<2;depth++){const i=(col+row*3+depth)%packets.length,xx=-w/2+.22+col*.24,zz=-.19+depth*.25,hh=.19+(i%3)*.055;if(i<4){cylinder('preserves and honey jar',xx,y+.04+hh/2,zz,.18,hh,packets[i],true);cylinder('jar screw lid',xx,y+.05+hh,zz,.19,.035,lid,true)}else box('grocery carton',xx,y+.04+hh/2,zz,.19,hh,.19,packets[i],true)}
   }
   [...solids.slice(start),...goods.slice(startGoods)].forEach(m=>m.parent=root);root.position.set(x,0,z);root.rotation.y=angle;root.computeWorldMatrix(true);
  }
- shelf(3,.8,4.4,2.25);shelf(3,4.45,5.3,2.75);shelf(-3.5,4.45,4,2.45);shelf(-5.45,1.3,3.8,2.45,-Math.PI/2);
+ for(const [i,f] of storeFixtures.slice(0,4).entries())shelf(f.x,f.z,i===3?f.d:f.w,f.h,i===3?-Math.PI/2:0);
  box('checkout cabinet',-3.7,.53,-2.25,3.5,1.06,1.1,white);box('checkout oak worktop',-3.7,1.11,-2.25,3.7,.12,1.25,oak);box('checkout kickboard',-3.7,.1,-2.83,3.45,.18,.07,oak);box('register drawer',-3.9,1.24,-2.25,.55,.14,.4,black);
  box('cash register display',-3.9,1.53,-2.3,.48,.32,.045,black);const screen=mat('checkout screen','#b2d7be');screen.emissiveColor=new Color3(.2,.3,.2);box('checkout display face',-3.9,1.53,-2.27,.4,.25,.01,screen);cylinder('checkout monitor support',-3.9,1.36,-2.3,.08,.2,black);box('paper shopping bags',-2.6,1.33,-2.25,.45,.32,.25,packets[5]);
  const notice=mat('checkout blackboard','#243d34');box('chalkboard on counter',-3.6,.67,-2.82,1.35,.66,.02,notice);const chalk=new DynamicTexture('welcome chalk lettering',{width:512,height:256},scene,false);chalk.drawText('Добро пожаловать!',null,94,'32px sans-serif','#fff8d8','#243d34',true);chalk.drawText('Свежие продукты каждый день',null,153,'23px sans-serif','#fff8d8',null,true);notice.diffuseTexture=chalk;
- box('refrigerator cabinet',-5.35,1.3,3.8,1.15,2.6,1,metal);box('refrigerator dark inside',-5.35,1.4,3.26,.98,2.2,.025,black);for(let row=0;row<4;row++){const y=.38+row*.49;box('fridge metal shelf',-5.35,y,3.18,1,.04,.15,white);for(let i=0;i<4;i++)cylinder('cold juice bottles',-5.7+i*.23,y+.17,3.15,.13,.3,packets[i%2?7:4],true)}
+ const fridge=storeFixtures[5];
+ // Hollow cabinet: shelves and bottles sit inside its side walls and back.
+ for(const side of [-1,1])box('refrigerator side',fridge.x+side*(fridge.w/2-.035),fridge.h/2,fridge.z,.07,fridge.h,fridge.d,metal);
+ box('refrigerator back',fridge.x,fridge.h/2,fridge.z+fridge.d/2-.035,fridge.w-.14,fridge.h,.07,black);
+ for(const y of [.045,fridge.h-.045])box('refrigerator cap',fridge.x,y,fridge.z,fridge.w,.09,fridge.d,metal);
+ for(let row=0;row<4;row++){const y=.35+row*.53;box('fridge metal shelf',fridge.x,y,fridge.z,fridge.w-.14,.04,.82,white);for(let i=0;i<4;i++)cylinder('cold juice bottles',fridge.x-.35+i*.23,y+.17,fridge.z-.23,.13,.3,packets[i%2?7:4],true)}
  cylinder('round oak tasting table',-4.6,.82,-4.05,1.3,.09,oak);cylinder('table pedestal',-4.6,.4,-4.05,.16,.78,metal);
  const leaf=mat('fern leaves','#4f7940'),pot=mat('fern terracotta','#b77850');
- cylinder('large fern pot',1.65,2.4,.8,.38,.25,pot);
- for(let i=0;i<28;i++){const angle=i*2.399,r=.15+(i%5)*.09,m=MeshBuilder.CreateSphere('arching fern frond',{diameter:1,segments:8},scene);m.position.set(1.65+Math.cos(angle)*r,2.8-(i%5)*.07,.8+Math.sin(angle)*r);m.scaling.set(.55,.035,.14);m.rotation.set(.12,angle,Math.cos(angle)*.38);m.material=leaf;m.isPickable=false;solids.push(m)}
+ cylinder('large fern pot',1.65,2.165,.8,.38,.25,pot);
+ for(let i=0;i<28;i++){const angle=i*2.399,r=.15+(i%5)*.09,m=MeshBuilder.CreateSphere('arching fern frond',{diameter:1,segments:8},scene);m.position.set(1.65+Math.cos(angle)*r,2.565-(i%5)*.07,.8+Math.sin(angle)*r);m.scaling.set(.55,.035,.14);m.rotation.set(.12,angle,Math.cos(angle)*.38);m.material=leaf;m.isPickable=false;solids.push(m)}
  const plant=await LoadAssetContainerAsync('/assets/polyhaven/potted_plant_01.glb',scene);
- for(const [x,y,z,size] of [[1.6,2.29,.8,.95],[4.4,2.29,.8,.75],[-2.3,2.49,4.45,.85],[4.7,2.79,4.45,.65],[-5,1.18,-2.25,.55]]){const instance=plant.instantiateModelsToScene(n=>'shop plant '+n,false),root=new TransformNode('shop greenery',scene);instance.rootNodes.forEach(n=>n.parent=root);root.computeWorldMatrix(true);const {min,max}=root.getHierarchyBoundingVectors(true),scale=size/(max.y-min.y);root.scaling.setAll(scale);root.position.set(x-(min.x+max.x)*.5*scale,y-min.y*scale,z-(min.z+max.z)*.5*scale);root.getChildMeshes().forEach(m=>{m.isPickable=false;m.receiveShadows=true;shadow.addShadowCaster(m)})}
+ for(const [x,y,z,size] of [[4.4,2.04,.8,.75],[-2.3,2.24,4.45,.85],[4.7,2.54,4.45,.65],[-5,1.18,-2.25,.55]]){const instance=plant.instantiateModelsToScene(n=>'shop plant '+n,false),root=new TransformNode('shop greenery',scene);instance.rootNodes.forEach(n=>n.parent=root);root.computeWorldMatrix(true);const {min,max}=root.getHierarchyBoundingVectors(true),scale=size/(max.y-min.y);root.scaling.setAll(scale);root.position.set(x-(min.x+max.x)*.5*scale,y-min.y*scale,z-(min.z+max.z)*.5*scale);root.getChildMeshes().forEach(m=>{m.isPickable=false;m.receiveShadows=true;shadow.addShadowCaster(m)})}
  // Bake small packages together while preserving their different labels.
  for(const m of [...solids,...goods])m.computeWorldMatrix(true);
  const mergedGoods=Mesh.MergeMeshes(goods,true,true,undefined,false,true);if(mergedGoods)mergedGoods.isPickable=false;
