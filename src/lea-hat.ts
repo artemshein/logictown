@@ -28,7 +28,7 @@ function buildHair(scene:Scene,body:Mesh){
  const unit=skull.getVerticesData(VertexBuffer.PositionKind)!,shaped=new Float32Array(unit.length);
  for(let i=0;i<unit.length;i+=3){
   const x=unit[i]*.148,z=.88+unit[i+1]*.15;let y=.06-unit[i+2]*.17;
-  const limit=z>=.895?-1:-.11+Math.min(1,(.895-z)/.095)*.11,width=1-Math.min(1,Math.max(0,(Math.abs(x)-.09)/.05));
+  const limit=z>=.895?-1:-.11+Math.min(1,(.895-z)/.095)*.11,width=1-Math.min(1,Math.max(0,(Math.abs(x)-.13)/.02));
   if(y<limit)y+=(limit-y)*width;
   shaped[i]=x;shaped[i+1]=y;shaped[i+2]=z;
  }
@@ -40,18 +40,30 @@ function buildHair(scene:Scene,body:Mesh){
   const cone=add(MeshBuilder.CreateCylinder('Lea hair lock',{height:length,diameterTop:width,diameterBottom:.004,tessellation:8},scene),pivot);
   cone.rotation.x=Math.PI/2;cone.position.z=-length/2;cone.scaling.z=.32;return cone;
  };
- // Bangs follow the forehead arc and stop above the eyes; outer locks fan out.
- for(let i=-3;i<=3;i++){const x=i*.033;lock(x,-.124+x*x*2.2,.94,.062+(i%2?.008:0),.05,-i*.11,-.05)}
- for(const s of [-1,1])lock(s*.132,-.03,.87,.16,.046,-s*.04,.05);
+ // Bangs grow out of the front of the hair volume: each lock is rooted just inside its surface
+ // at the hairline and runs down over the forehead to the brows, so no gap opens above them.
+ const surface=(x:number,z:number)=>.06-.17*Math.sqrt(Math.max(0,1-(x/.148)**2-((z-.88)/.15)**2));
+ const rooted=(x:number,rootZ:number,tipZ:number,tipY:number,width:number,lean:number)=>{
+  const rootY=surface(x,rootZ)+.028,dy=tipY-rootY,dz=tipZ-rootZ,length=Math.hypot(dy,dz);
+  lock(x,rootY,rootZ,length,width,lean,Math.asin(dy/length)).scaling.z=.5;
+ };
+ for(let i=-3;i<=3;i++){const x=i*.032;rooted(x,.95,.855-(i%2?.008:0),-.116+x*x*2.2,.06,-i*.04)}
+ // Side locks fall in front of the ears from the temples.
+ for(const s of [-1,1])rooted(s*.128,.9,.72,-.04,.048,-s*.03);
  return {root,meshes};
 }
-// The irises have open patches meant to show an eyeball the model lacks: whatever stood behind
-// the head showed through. Dark teal backings close them, hat on or off.
+// The irises have open patches meant to show an eyeball the model lacks, and the head behind the
+// face mask is hollow: hair or scenery showed through the eyes. A dark teal volume fills the head
+// just behind the mask, so from any angle the eyes look into it. Hat on or off.
 function buildEyeBacking(scene:Scene,body:Mesh){
- const root=new TransformNode('Lea eye backing',scene);root.parent=body;
- const mat=new PBRMaterial('Lea iris depth',scene);mat.albedoColor=Color3.FromHexString('#1f5a60');mat.metallic=0;mat.roughness=.35;
- for(const s of [-1,1]){const e=MeshBuilder.CreateSphere('Lea eye backing',{diameter:1,segments:12},scene);e.parent=root;e.material=mat;e.isPickable=false;e.position.set(s*.06,-.03,.8);e.rotation.x=Math.PI/2;e.scaling.set(.06,.078,.03)}
- return root;
+ const mat=new PBRMaterial('Lea iris depth',scene);mat.albedoColor=Color3.White();mat.metallic=0;mat.roughness=.35;
+ const e=MeshBuilder.CreateSphere('Lea eye backing',{diameter:1,segments:20},scene);e.parent=body;e.material=mat;e.isPickable=false;
+ e.position.set(0,.02,.81);e.rotation.x=Math.PI/2;e.scaling.set(.26,.17,.16);
+ // Teal straight behind the eyes, skin tone towards the temples where it can peek out under the hair.
+ const iris=Color3.FromHexString('#1f5a60'),skin=Color3.FromHexString('#f2cdb8'),normals=e.getVerticesData(VertexBuffer.NormalKind)!,colors:number[]=[];
+ for(let i=0;i<normals.length;i+=3){const t=Math.min(1,Math.max(0,(normals[i+2]-.35)/.35)),c=Color3.Lerp(skin,iris,t*t*(3-2*t));colors.push(c.r,c.g,c.b,1)}
+ e.setVerticesData(VertexBuffer.ColorKind,colors);
+ return e;
 }
 export async function createLeaHat(scene:Scene,body:Mesh,head:TransformNode|undefined,shadow?:ShadowGenerator){
  const full=Array.from(body.getIndices()??[]);let bare:number[]|undefined;
