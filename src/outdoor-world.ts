@@ -4,7 +4,8 @@ import {createGardenPaint} from './outdoor-colors';
 import {OutdoorGroundBlend} from './outdoor-ground-blend';
 import {buildBusStop} from './bus-stop';
 import {outdoorStore,outdoorHomes,outdoorTrees,outdoorFenceGroups,outdoorSwing,outdoorEntrance} from './outdoor-layout';
-export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
+/** Textured lawn, asphalt and paving shared by every outdoor location. */
+export function createOutdoorGround(scene:Scene){
  const texture=(name:string)=>{
   const mat=new StandardMaterial('outdoor '+name,scene);mat.specularColor=new Color3(.04,.04,.04);
   mat.diffuseTexture=new Texture(`/assets/outdoor/${name}/color.jpg`,scene);
@@ -26,8 +27,13 @@ export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
  // Keep the lawn colour consistent all the way to the panorama.
  const lawn=ground('neighbourhood lawn',0,-16,500,500,-.01,grass);lawn.applyFog=false;
  lawn.setVerticesData(VertexBuffer.ColorKind,Array.from({length:lawn.getTotalVertices()},()=>[.76,.88,.72,1]).flat());
+ // The bus road with its two pavements runs along x in every outdoor location.
  ground('quiet residential street',0,-18,400,6,.012,asphalt);
  for(const z of [-13.5,-22.5])ground('pavement',0,z,400,3,.026,paving);
+ return {ground,floors,asphalt,paving};
+}
+export async function buildOutdoorWorld(scene:Scene,shadow:ShadowGenerator){
+ const {ground,floors,paving}=createOutdoorGround(scene);
  ground('front garden path',outdoorEntrance.x,-7.7,2.2,7.4,.04,paving);
  if(outdoorEntrance.x!==0)ground('gate connecting path',outdoorEntrance.x/2,-11,Math.abs(outdoorEntrance.x)+2.2,2.2,.041,paving);
  ground('swing landing',outdoorSwing.x,outdoorSwing.z,5.2,4,.025,paving);

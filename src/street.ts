@@ -56,7 +56,7 @@ function enterStore(){if(transitioning||!nearInteraction(lea.position,storeAppro
 storeButton.onclick=enterStore;
 const busButton=document.createElement('button');busButton.className='street-swing';busButton.textContent='Поехать в школу';busButton.hidden=true;app.append(busButton);
 const nearBusStop=()=>!transitioning&&(nearInteraction(lea.position,new Vector3(outdoorBusApproach.x,.11,outdoorBusApproach.z),2.4)||Math.abs(lea.position.x-outdoorBusStop.x)<outdoorBusStop.w/2&&Math.abs(lea.position.z-outdoorBusStop.z)<outdoorBusStop.d/2);
-function rideBus(){if(!nearBusStop())return;transitioning=true;route=[];controls.clear();loading.querySelector('strong')!.textContent='Садимся в автобус…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:2,area:'street'});requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(check?'/bus.html?check=ride':'/bus.html')))}
+function rideBus(){if(!nearBusStop())return;transitioning=true;route=[];controls.clear();loading.querySelector('strong')!.textContent='Садимся в автобус…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:2,area:'street'});requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(check?'/bus.html?check=ride':'/bus.html?to=school')))}
 busButton.onclick=rideBus;
 const storePin=createInteractionMarker(scene,'Войти в магазин','↪',new Vector3(52,1.5,-24.5),enterStore);
 const townOverview=checkMode==='town';

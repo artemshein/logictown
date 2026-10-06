@@ -26,12 +26,12 @@ const stopSign:Paint=(c,w,h)=>{
  c.fillRect(w*.2,h*.3,w*.6,h*.32);c.fillStyle='#1f5fb4';for(let i=0;i<3;i++)c.fillRect(w*(.25+i*.18),h*.35,w*.13,h*.12);
  c.fillStyle='#fff';c.beginPath();c.arc(w*.32,h*.66,w*.07,0,Math.PI*2);c.arc(w*.68,h*.66,w*.07,0,Math.PI*2);c.fill();
 };
-const nameBoard:Paint=(c,w,h)=>{
- c.fillStyle='#f4f1e8';c.fillRect(0,0,w,h);c.fillStyle='#36594e';c.textAlign='center';c.font=`700 ${h*.42}px system-ui,sans-serif`;c.fillText('Остановка «Тихий город»',w/2,h*.62);
+const nameBoard=(name:string):Paint=>(c,w,h)=>{
+ c.fillStyle='#f4f1e8';c.fillRect(0,0,w,h);c.fillStyle='#36594e';c.textAlign='center';c.font=`700 ${h*.42}px system-ui,sans-serif`;c.fillText(`Остановка «${name}»`,w/2,h*.62,w*.94);
 };
 /** A timber shelter with a glowing soffit, glass back wall and a bench. */
-export function buildBusStop(scene:Scene,shadow:ShadowGenerator){
- const root=new TransformNode('bus stop',scene);root.position.set(outdoorBusStop.x,0,outdoorBusStop.z);
+export function buildBusStop(scene:Scene,shadow:ShadowGenerator,stop:{x:number;z:number;w:number;d:number}=outdoorBusStop,name='Тихий город'){
+ const root=new TransformNode('bus stop',scene);root.position.set(stop.x,0,stop.z);
  const mat=(name:string,c:Color3,alpha=1)=>{const m=new StandardMaterial('bus stop '+name,scene);m.diffuseColor=c;m.specularColor=new Color3(.06,.06,.06);if(alpha<1){m.alpha=alpha;m.backFaceCulling=false}return m};
  const wood=mat('timber',new Color3(.74,.46,.24)),concrete=mat('slab',new Color3(.7,.69,.66)),metal=mat('roof',new Color3(.46,.48,.5)),glass=mat('glass',new Color3(.75,.88,.92),.22),dark=mat('frame',new Color3(.16,.17,.18));
  const soffit=mat('soffit light',new Color3(.98,.74,.45));soffit.emissiveColor=new Color3(.9,.58,.28);
@@ -39,7 +39,7 @@ export function buildBusStop(scene:Scene,shadow:ShadowGenerator){
  const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,m:StandardMaterial,cast=true)=>{const b=MeshBuilder.CreateBox('bus stop '+name,{width:w,height:h,depth:d},scene);b.parent=root;b.position.set(x,y,z);b.material=m;b.receiveShadows=true;if(cast)shadow.addShadowCaster(b);meshes.push(b);return b};
  // Printed faces are single-sided planes; rotY points their front (-z by default) outward.
  const face=(name:string,w:number,h:number,x:number,y:number,z:number,rotY:number,m:StandardMaterial)=>{const p=MeshBuilder.CreatePlane('bus stop '+name,{width:w,height:h},scene);p.parent=root;p.position.set(x,y,z);p.rotation.y=rotY;p.material=m;meshes.push(p);return p};
- box('slab',outdoorBusStop.w,.15,outdoorBusStop.d,0,.075,0,concrete,false);
+ box('slab',stop.w,.15,stop.d,0,.075,0,concrete,false);
  const back=-1.05,front=.95,side=2.05;
  for(const x of [-side,side]){box('front post',.14,2.62,.14,x,1.46,front,wood);box('back post',.14,2.48,.14,x,1.39,back,wood)}
  box('back post centre',.12,2.48,.12,0,1.39,back,wood);
@@ -52,7 +52,7 @@ export function buildBusStop(scene:Scene,shadow:ShadowGenerator){
  // Glass back wall with timber rails and the stop name.
  box('back rail low',4.1,.1,.1,0,.3,back,wood);box('back rail top',4.1,.12,.12,0,2.5,back,wood);
  for(const x of [-1.03,1.03])box('back glass',1.95,2.08,.02,x,1.38,back,glass,false);
- box('name board backing',1.84,.28,.03,-1.03,2.15,back+.02,dark,false);face('name board',1.8,.24,-1.03,2.15,back+.04,Math.PI,canvasMaterial(scene,'bus stop name board',512,68,nameBoard));
+ box('name board backing',1.84,.28,.03,-1.03,2.15,back+.02,dark,false);face('name board',1.8,.24,-1.03,2.15,back+.04,Math.PI,canvasMaterial(scene,'bus stop name board',512,68,nameBoard(name)));
  face('timetable',.6,.8,1.2,1.5,back+.03,Math.PI,canvasMaterial(scene,'bus stop route map',256,340,routeMap));
  // Back-lit poster on the left and a glass side with the route map on the right.
  box('poster frame',.12,1.9,1.35,-side,1.2,-.3,dark);

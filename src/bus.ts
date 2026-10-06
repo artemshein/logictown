@@ -6,9 +6,12 @@ import {outdoorBusRoute} from './outdoor-layout';
 import {createOutdoorSky,outdoorSunDirection} from './outdoor-sky';
 import {createViewportSync} from './viewport';
 import './style.css';
-export const busRideDuration=10;
+// To school the bus crosses the whole village; back to town it only drives in from the west.
+const toTown=new URLSearchParams(location.search).get('to')==='town';
+const route=toTown?{from:outdoorBusRoute.arrivalFrom,to:outdoorBusRoute.from,stop:'Тихий город'}:{from:outdoorBusRoute.from,to:outdoorBusRoute.to,stop:'Школа'};
+export const busRideDuration=toTown?9:13;
 const app=document.querySelector<HTMLElement>('#app')!;
-app.innerHTML='<canvas id="world" aria-label="Поездка на автобусе через город. Поворачивай голову перетаскиванием или стрелками."></canvas><div class="loading"><strong>Садимся в автобус…</strong><span>Маршрут 1 · Школа</span></div><div class="toast" role="status">Потяни экран или нажми стрелки, чтобы посмотреть в окно</div>';
+app.innerHTML=`<canvas id="world" aria-label="Поездка на автобусе через город. Поворачивай голову перетаскиванием или стрелками."></canvas><div class="loading"><strong>Садимся в автобус…</strong><span>Маршрут 1 · ${route.stop}</span></div><div class="toast" role="status">Потяни экран или нажми стрелки, чтобы посмотреть в окно</div>`;
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null,check=!!checkMode;
 // In checks, `at` freezes the ride at a moment for screenshots.
 const frozenAt=check?Number(new URLSearchParams(location.search).get('at')??NaN):NaN;
@@ -20,7 +23,7 @@ const sun=new DirectionalLight('bright afternoon sun',outdoorSunDirection.scale(
 sky.diffuse=sun.diffuse.clone();sky.groundColor=sun.diffuse.scale(.45);
 const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.0005;shadow.normalBias=.02;shadow.darkness=.22;
 createOutdoorSky(scene);
-const bus=buildBusInterior(scene);bus.root.position.set(outdoorBusRoute.from,0,outdoorBusRoute.z);
+const bus=buildBusInterior(scene);bus.root.position.set(route.from,0,outdoorBusRoute.z);
 // The roof blocks daylight: the cabin gets its own soft fill and ceiling lamp instead.
 sky.excludedMeshes.push(...bus.interior);sun.excludedMeshes.push(...bus.interior);
 const cabinFill=new HemisphericLight('bus cabin fill',Vector3.Up(),scene);cabinFill.intensity=.72;cabinFill.diffuse=new Color3(1,.98,.94);cabinFill.groundColor=new Color3(.42,.42,.44);cabinFill.includedOnlyMeshes=bus.interior;
@@ -41,13 +44,14 @@ const ease=(u:number)=>u<=0?0:u>=1?1:(1-Math.cos(Math.PI*u))/2;
 let time=0,arriving=false;
 function arrive(){
  if(arriving)return;arriving=true;
- loading.querySelector('strong')!.textContent='Приехали!';loading.querySelector('span')!.textContent='Возвращаемся на остановку';loading.hidden=false;
+ loading.querySelector('strong')!.textContent='Приехали!';loading.querySelector('span')!.textContent=`Остановка «${route.stop}»`;loading.hidden=false;
+ if(!toTown){setTimeout(()=>location.assign(check?'/school.html?check=arrival':'/school.html'),700);return}
  try{sessionStorage.setItem('logictown-return-bus','1')}catch{}
  setTimeout(()=>location.assign(check?'/street.html?check=bus-return':'/street.html'),700);
 }
 function place(t:number){
- const u=t/busRideDuration,span=outdoorBusRoute.to-outdoorBusRoute.from;
- bus.root.position.x=outdoorBusRoute.from+span*ease(u);
+ const u=t/busRideDuration,span=route.to-route.from;
+ bus.root.position.x=route.from+span*ease(u);
  // Gentle body roll from the road and a forward pitch while accelerating or braking.
  const accel=Math.PI*Math.PI/2*Math.cos(Math.PI*Math.min(1,Math.max(0,u)))*span/busRideDuration**2;
  bus.root.rotation.x=Math.sin(t*3.3)*.006+Math.sin(t*7.9)*.002;bus.root.rotation.z=accel*.004;
@@ -68,10 +72,10 @@ async function start(){
   time=Number.isFinite(frozenAt)?frozenAt:time+dt;place(Math.min(time,busRideDuration));
   sun.position.copyFrom(bus.root.position.add(outdoorSunDirection.scale(80)));
   const u=Math.min(1,time/busRideDuration);sound.update(Math.sin(Math.PI*u),arriving?0:1);
-  bus.setNextStop(time<.6?'1 · Школа':time<busRideDuration-1.2?'Следующая: Магазин':'Остановка «Магазин»');
+  bus.setNextStop(time<.6?'1 · '+route.stop:time<busRideDuration-1.2?'Следующая: '+route.stop:`Остановка «${route.stop}»`);
   scene.render();
   if(!Number.isFinite(frozenAt)&&time>=busRideDuration)arrive();
  });
 }
-void start().catch(error=>{console.error(error);loading.querySelector('strong')!.textContent='Не удалось завести автобус';loading.querySelector('span')!.innerHTML='<a href="/street.html">Вернуться на улицу</a>'});
+void start().catch(error=>{console.error(error);loading.querySelector('strong')!.textContent='Не удалось завести автобус';loading.querySelector('span')!.innerHTML=toTown?'<a href="/school.html">Вернуться к школе</a>':'<a href="/street.html">Вернуться на улицу</a>'});
 import.meta.hot?.dispose(()=>{sound.dispose();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);viewport.dispose();engine.dispose()});

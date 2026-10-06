@@ -9,6 +9,7 @@ export default defineConfig({
         street: 'street.html',
         store: 'store.html',
         bus: 'bus.html',
+        school: 'school.html',
         character: 'character.html',
       },
     },

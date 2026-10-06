@@ -1,5 +1,5 @@
 import type {RoomId} from './house-data';
-export type PlayerLocation={version:2;area:'house';room:RoomId}|{version:2;area:'street'|'store'};
+export type PlayerLocation={version:2;area:'house';room:RoomId}|{version:2;area:'street'|'store'|'school'};
 const rooms=['bedroom','living','kitchen','bathroom','toilet','hall'];
 type Store=Pick<Storage,'getItem'|'setItem'>;
 export const playerLocationKey='logictown-player-location-v1';
@@ -10,6 +10,7 @@ export function parsePlayerLocation(raw:unknown):PlayerLocation|undefined{
  if(r.version!==2)return;
  if(r.area==='street')return {version:2,area:'street'};
  if(r.area==='store')return {version:2,area:'store'};
+ if(r.area==='school')return {version:2,area:'school'};
  if(r.area==='house'&&typeof r.room==='string'&&rooms.includes(r.room))return {version:2,area:'house',room:r.room as RoomId};
 }
 export function readPlayerLocation(store=browserStore()){

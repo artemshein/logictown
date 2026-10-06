@@ -15,10 +15,17 @@ export const outdoorWateringCan={x:-24.5,z:9.6};
 // The bus shelter faces the road at the western end of the village, opposite the store.
 export const outdoorBusStop={x:-46,z:-25.7,w:4.6,d:2.6};
 export const outdoorBusApproach={x:-46,z:-23.3};
+// Shelter back wall and side panels; the road side stays open.
+export function busStopObstacles(stop:OutdoorPoint):OutdoorObstacle[]{return [
+ {x:stop.x,z:stop.z-1.05,w:4.2,d:.2,kind:'busstop'},
+ {x:stop.x-2.05,z:stop.z-.3,w:.2,d:1.5,kind:'busstop'},
+ {x:stop.x+2.05,z:stop.z-.3,w:.2,d:1.5,kind:'busstop'},
+]}
 // A spilt tin of red paint on the pavement in front of the wide-porch house.
 export const outdoorPaintPuddle={x:23.4,z:-13.3,r:.62};
-// Eastbound lane: the bus runs from the shelter past the houses to the store.
-export const outdoorBusRoute={z:-19.4,from:-46,to:52};
+// Eastbound lane: to school the bus leaves the shelter past the houses and the store;
+// back from school it enters the village from the west and stops at the shelter.
+export const outdoorBusRoute={z:-19.4,from:-46,to:100,arrivalFrom:-130};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=outdoorHouseProfiles[h.model as keyof typeof outdoorHouseProfiles];return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});
 // Porch approach in front of every neighbour's door (matches the garden walks).
 export const outdoorNeighbourDoors=outdoorHomes.filter(h=>h.x!==0||h.angle!==0).map(h=>{const facing=h.angle===0?-1:1;return {x:h.x+(h.model==='d'?-2.3:0)*(h.angle===0?1:-1),z:h.z+facing*(h.d/2+1.8),facing}});
@@ -51,10 +58,7 @@ export const outdoorObstacles:OutdoorObstacle[]=[
  ...outdoorTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),
  {...outdoorSwing,w:4,d:2.7,kind:'swing'},
  ...outdoorFlowerBeds.map(b=>({...b,kind:'flowerbed'})),
- // Shelter back wall and side panels; the road side stays open.
- {x:outdoorBusStop.x,z:outdoorBusStop.z-1.05,w:4.2,d:.2,kind:'busstop'},
- {x:outdoorBusStop.x-2.05,z:outdoorBusStop.z-.3,w:.2,d:1.5,kind:'busstop'},
- {x:outdoorBusStop.x+2.05,z:outdoorBusStop.z-.3,w:.2,d:1.5,kind:'busstop'},
+ ...busStopObstacles(outdoorBusStop),
 ];
 export function outdoorBlocked(x:number,z:number){return x< -63||x>63||z< -48||z>15||outdoorObstacles.some(o=>Math.abs(x-o.x)<o.w/2+.25-1e-6&&Math.abs(z-o.z)<o.d/2+.25-1e-6)}
 const step=.5,ox=-63,oz=-48,nx=253,nz=127;
