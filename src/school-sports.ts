@@ -39,7 +39,9 @@ export function buildSchoolSports(scene:Scene,shadow:ShadowGenerator){
  const fieldMaterial=canvasMaterial(scene,'school track and pitch',Math.round(W*pxPerMetre),Math.round(H*pxPerMetre),paintField,true);fieldMaterial.backFaceCulling=true;fieldMaterial.specularColor=Color3.Black();
  const field=MeshBuilder.CreateGround('school track and football pitch',{width:W,height:H},scene);field.position.set(schoolTrack.x,.03,schoolTrack.z);field.material=fieldMaterial;field.receiveShadows=true;
  const mat=(name:string,hex:string,spec=.1)=>{const m=new StandardMaterial('school '+name,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=new Color3(spec,spec,spec);return m};
- const white=mat('goal frame','#f4f4f0',.3),alu=mat('stand aluminium','#c3c8cc',.35),frame=mat('stand frame','#6c7276',.2),deck=mat('stand deck','#8e959a',.2),pole=mat('floodlight pole','#8b9195',.25);
+ const white=mat('goal frame','#f4f4f0',.3),alu=mat('stand aluminium','#c3c8cc',.35),frame=mat('stand frame','#6c7276',.2),deck=mat('stand deck','#b7bdc1',.3),pole=mat('floodlight pole','#8b9195',.25);
+ // The deck sits in the stand's own shadow: a little self-light keeps it reading as metal, not a hole.
+ deck.emissiveColor=new Color3(.3,.31,.33);
  const lamp=mat('floodlight lamps','#fffbe8');lamp.emissiveColor=new Color3(.75,.74,.66);
  const net=canvasMaterial(scene,'goal net',256,256,netPaint,true);net.specularColor=Color3.Black();
  const parts=new Map<StandardMaterial,Mesh[]>();const add=(m:Mesh,material:StandardMaterial)=>{m.material=material;const list=parts.get(material)??[];list.push(m);parts.set(material,list);return m};
@@ -81,7 +83,7 @@ export function buildSchoolSports(scene:Scene,shadow:ShadowGenerator){
  }
  for(const [material,list] of parts){
   const merged=Mesh.MergeMeshes(list,true,true);if(!merged)continue;
-  merged.name=material.name;merged.receiveShadows=true;merged.isPickable=false;meshes.push(merged);if(material!==lamp)shadow.addShadowCaster(merged);
+  merged.name=material.name;merged.receiveShadows=material!==deck;merged.isPickable=false;meshes.push(merged);if(material!==lamp)shadow.addShadowCaster(merged);
  }
  return {floors:[field],meshes};
 }
