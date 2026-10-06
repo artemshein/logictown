@@ -23,9 +23,8 @@ export function busStopObstacles(stop:OutdoorPoint):OutdoorObstacle[]{return [
 ]}
 // A spilt tin of red paint on the pavement in front of the wide-porch house.
 export const outdoorPaintPuddle={x:23.4,z:-13.3,r:.62};
-// Eastbound lane: to school the bus leaves the shelter past the houses and the store;
-// back from school it enters the village from the west and stops at the shelter.
-export const outdoorBusRoute={z:-19.4,from:-46,to:100,arrivalFrom:-130};
+// Eastbound lane: the bus leaves the shelter past the houses and the store towards the school.
+export const outdoorBusRoute={z:-19.4,from:-46,to:100};
 export const outdoorHomes=[{x:0,z:0,model:'a',angle:0},{x:-26,z:0,model:'b',angle:0},{x:26,z:0,model:'c',angle:0},{x:-52,z:0,model:'d',angle:0},{x:52,z:0,model:'b',angle:0},{x:-26,z:-35,model:'c',angle:Math.PI},{x:0,z:-35,model:'d',angle:Math.PI},{x:26,z:-35,model:'a',angle:Math.PI}].map(h=>{const dimensions=outdoorHouseProfiles[h.model as keyof typeof outdoorHouseProfiles];return {...h,...dimensions,z:h.angle===0?-4+dimensions.d/2:-31-dimensions.d/2}});
 // Porch approach in front of every neighbour's door (matches the garden walks).
 export const outdoorNeighbourDoors=outdoorHomes.filter(h=>h.x!==0||h.angle!==0).map(h=>{const facing=h.angle===0?-1:1;return {x:h.x+(h.model==='d'?-2.3:0)*(h.angle===0?1:-1),z:h.z+facing*(h.d/2+1.8),facing}});

@@ -1,15 +1,18 @@
 import {Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointLight,Scene,ShadowGenerator,UniversalCamera,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
+import {buildSchoolWorld} from './school-world';
+import {schoolBusStop} from './school-layout';
 import {buildBusInterior,busInterior} from './bus-interior';
 import {createBusEngineSound} from './bus-engine-sound';
 import {outdoorBusRoute} from './outdoor-layout';
 import {createOutdoorSky,outdoorSunDirection} from './outdoor-sky';
 import {createViewportSync} from './viewport';
 import './style.css';
-// To school the bus crosses the whole village; back to town it only drives in from the west.
+// Every ride shows the departure: through the village to school, or away from the school stop
+// (same road and lane, z=-19.4) back to town.
 const toTown=new URLSearchParams(location.search).get('to')==='town';
-const route=toTown?{from:outdoorBusRoute.arrivalFrom,to:outdoorBusRoute.from,stop:'Тихий город'}:{from:outdoorBusRoute.from,to:outdoorBusRoute.to,stop:'Школа'};
-export const busRideDuration=toTown?9:13;
+const route=toTown?{from:schoolBusStop.x,to:schoolBusStop.x+146,stop:'Тихий город'}:{from:outdoorBusRoute.from,to:outdoorBusRoute.to,stop:'Школа'};
+export const busRideDuration=13;
 const app=document.querySelector<HTMLElement>('#app')!;
 app.innerHTML=`<canvas id="world" aria-label="Поездка на автобусе через город. Поворачивай голову перетаскиванием или стрелками."></canvas><div class="loading"><strong>Садимся в автобус…</strong><span>Маршрут 1 · ${route.stop}</span></div><div class="toast" role="status">Потяни экран или нажми стрелки, чтобы посмотреть в окно</div>`;
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null,check=!!checkMode;
@@ -31,8 +34,8 @@ const cabinLamp=new PointLight('bus ceiling lamps',new Vector3(0,busInterior.cei
 const sound=createBusEngineSound();
 const camera=new UniversalCamera('bus passenger view',Vector3.Zero(),scene);camera.parent=bus.head;camera.inputs.clear();camera.minZ=.05;camera.maxZ=180;camera.fov=.95;new FxaaPostProcess('bus antialias',1,camera);
 const viewport=createViewportSync(canvas,engine,aspect=>camera.fov=aspect<.8?1.2:.95);
-// Head turning only: the passenger stays seated. Start glancing at the left window.
-const look={yaw:-.85,pitch:.04};const limits={yaw:2.4,pitch:.55};
+// Head turning only: the passenger stays seated. Start glancing at the window facing the departing stop.
+const look={yaw:toTown?.85:-.85,pitch:.04};const limits={yaw:2.4,pitch:.55};
 const clampLook=()=>{look.yaw=Math.max(-limits.yaw,Math.min(limits.yaw,look.yaw));look.pitch=Math.max(-limits.pitch,Math.min(limits.pitch,look.pitch))};
 let dragging:number|undefined,lastX=0,lastY=0;const keys=new Set<string>();
 canvas.addEventListener('pointerdown',e=>{dragging=e.pointerId;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});
@@ -58,7 +61,7 @@ function place(t:number){
  bus.root.position.y=Math.abs(Math.sin(t*5.1))*.008;
 }
 async function start(){
- await buildOutdoorWorld(scene,shadow);
+ await (toTown?buildSchoolWorld(scene,shadow):buildOutdoorWorld(scene,shadow));
  place(0);await scene.whenReadyAsync();loading.hidden=true;
  // Firefox keeps resume() pending until a gesture: never let audio hold up the ride.
  await Promise.race([sound.unlock(),new Promise(r=>setTimeout(r,300))]);if(!sound.running)hint.textContent='Потяни экран или нажми стрелки, чтобы посмотреть в окно. Нажми, чтобы включить звук.';
