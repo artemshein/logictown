@@ -57,6 +57,7 @@ const step=.5,nx=(bounds.maxX-bounds.minX)/step+1,nz=(bounds.maxZ-bounds.minZ)/s
 const free=Array.from({length:nx*nz},(_,i)=>!schoolBlocked(bounds.minX+i%nx*step,bounds.minZ+Math.floor(i/nx)*step));
 const point=(id:number):OutdoorPoint=>({x:bounds.minX+id%nx*step,z:bounds.minZ+Math.floor(id/nx)*step});
 const nearest=(p:OutdoorPoint)=>{let best=-1,dist=Infinity;for(let i=0;i<free.length;i++){if(!free[i])continue;const q=point(i),d=(q.x-p.x)**2+(q.z-p.z)**2;if(d<dist){best=i;dist=d}}return best};
+export function schoolCompanionTarget(lea:OutdoorPoint,heading:number){for(const side of [-1,1]){const p={x:lea.x+side*.9*Math.cos(heading)-.35*Math.sin(heading),z:lea.z-side*.9*Math.sin(heading)-.35*Math.cos(heading)};if(!schoolBlocked(p.x,p.z))return p}return {x:lea.x,z:lea.z}}
 export function schoolPath(from:OutdoorPoint,to:OutdoorPoint):OutdoorPoint[]{
  const start=nearest(from),end=nearest(to);
  if(start<0||end<0)return [];

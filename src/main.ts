@@ -1,5 +1,6 @@
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
+import {dogPresent} from './dog-whereabouts';
 import {installOpenDoors} from './doors';
 import {createAdaptiveQuality} from './render-quality';
 import {readPlayerLocation,savePlayerLocation,installLocationAutosave} from './player-location';
@@ -263,7 +264,8 @@ const locationAutosave=installLocationAutosave(()=>({version:2,area:'house',room
 locationAutosave.flush();import.meta.hot?.dispose(()=>locationAutosave.dispose());
 let dog:Awaited<ReturnType<typeof loadDog>>|undefined;
 let dogCommands:ReturnType<typeof installDogCommands>|undefined;
-void loadDog(scene,girl,shadow,bark).then(asset=>{dog=asset;dogCommands=installDogCommands($('#app'),asset,()=>sound)}).catch(e=>console.error('Unable to load puppy',e));
+// The puppy is away when it was left sitting at the school.
+if(!persistLocation||dogPresent('town'))void loadDog(scene,girl,shadow,bark).then(asset=>{dog=asset;dogCommands=installDogCommands($('#app'),asset,()=>sound)}).catch(e=>console.error('Unable to load puppy',e));
 import.meta.hot?.dispose(()=>dogCommands?.dispose());
 const dogCheck=import.meta.env.DEV&&location.pathname==='/checks/dog.html';
 if(dogCheck){
@@ -278,9 +280,9 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
  let manualMoving=false;
  if(manual){route=[];arrival=null;marker.isVisible=false;characterActionUntil=0;girl.rotation.y+=input.turn*dt*2.2;
  const collides=blocked;
- const next=moveWithCollisions(girl.position,girl.rotation.y,input.forward*dt*2.9,collides);manualMoving=Math.hypot(next.x-girl.position.x,next.z-girl.position.z)>.0001;girl.position.x=next.x;girl.position.z=next.z;
+ const next=moveWithCollisions(girl.position,girl.rotation.y,input.forward*dt*(input.run?5:2.9),collides);manualMoving=Math.hypot(next.x-girl.position.x,next.z-girl.position.z)>.0001;girl.position.x=next.x;girl.position.z=next.z;
  }
- const moving=manualMoving||route.length>0&&$('.overlay').hidden;if(route.length&&$('.overlay').hidden){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*2.9){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*2.9/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?'Walk':'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);const cameraAlpha=-Math.PI/2-girl.rotation.y;camera.alpha+=Math.atan2(Math.sin(cameraAlpha-camera.alpha),Math.cos(cameraAlpha-camera.alpha))*(1-Math.exp(-dt*7));
+ const moving=manualMoving||route.length>0&&$('.overlay').hidden;if(route.length&&$('.overlay').hidden){const delta=route[0].subtract(girl.position);delta.y=0;const dist=delta.length();if(dist<dt*2.9){girl.position.x=route[0].x;girl.position.z=route[0].z;route.shift();if(!route.length){marker.isVisible=false;const fn=arrival;arrival=null;fn?.()}}else{girl.position.addInPlace(delta.scale(dt*2.9/dist));const target=Math.atan2(delta.x,delta.z);girl.rotation.y+=Math.atan2(Math.sin(target-girl.rotation.y),Math.cos(target-girl.rotation.y))*Math.min(1,dt*13)}}girl.position.y=.11+(moving?Math.abs(Math.sin(time*11))*.025:Math.sin(time*2)*.008);if(performance.now()>characterActionUntil)leaAsset?.play(moving?(manualMoving&&input.run?'Run':'Walk'):'Idle');limbs.forEach((l,i)=>l.rotation.x=moving?Math.sin(time*11+(i<2?0:Math.PI))*(i%2?.35:.5):Math.sin(time*2+i)*.025);lid.rotation.x+=( (solved?-1.08:0)-lid.rotation.x)*dt*4;marker.rotation.y+=dt;const entered=roomAt(girl.position.x,girl.position.z);if(entered&&entered!==currentRoom)switchRoom(entered);const cameraAlpha=-Math.PI/2-girl.rotation.y;camera.alpha+=Math.atan2(Math.sin(cameraAlpha-camera.alpha),Math.cos(cameraAlpha-camera.alpha))*(1-Math.exp(-dt*7));
  camera.target.set(girl.position.x,1.45,girl.position.z);
  const direction=new Vector3(Math.cos(camera.alpha)*Math.sin(camera.beta),Math.cos(camera.beta),Math.sin(camera.alpha)*Math.sin(camera.beta));
  const walls=[...cameraWalls];

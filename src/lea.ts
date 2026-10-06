@@ -2,7 +2,7 @@ import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Quaternion, Scene, Sha
 import '@babylonjs/loaders/glTF';
 import {placePalm,reachArm} from './arm-grip';
 
-export type LeaClip = 'Idle' | 'Walk' | 'Interact' | 'Celebrate' | 'Sit';
+export type LeaClip = 'Idle' | 'Walk' | 'Run' | 'Interact' | 'Celebrate' | 'Sit';
 export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGenerator){
   const result=await ImportMeshAsync('/models/cute-chibi-girl.glb',scene);
   const pivot=new TransformNode('Lea asset orientation',scene);pivot.parent=parent;pivot.scaling.setAll(1.3);
@@ -37,13 +37,14 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
     .map(entry=>({...entry,rest:entry.node.rotationQuaternion?.clone()??Quaternion.Identity()}));
   let active:LeaClip|undefined;
   let elapsed=0;
-  const setWalkPose=(phase:number)=>animatedJoints.forEach(({node,rest,amplitude})=>{
-    node.rotationQuaternion=Quaternion.RotationAxis(Vector3.Right(),Math.sin(phase)*amplitude).multiply(rest);
+  const setWalkPose=(phase:number,stride=1)=>animatedJoints.forEach(({node,rest,amplitude})=>{
+    node.rotationQuaternion=Quaternion.RotationAxis(Vector3.Right(),Math.sin(phase)*amplitude*stride).multiply(rest);
   });
-  const observer=scene.onBeforeRenderObservable.add(()=>{if(active==='Walk'){elapsed+=scene.getEngine().getDeltaTime()/1000;setWalkPose(elapsed*10)}});
+  const observer=scene.onBeforeRenderObservable.add(()=>{if(active==='Walk'||active==='Run'){const run=active==='Run';elapsed+=scene.getEngine().getDeltaTime()/1000*(run?1.7:1);setWalkPose(elapsed*10,run?1.45:1)}});
   const restPose=result.transformNodes.map(node=>({node,position:node.position.clone(),rotation:node.rotationQuaternion?.clone()}));
   const play=(name:LeaClip,loop=true)=>{
     if(name===active)return;
+    const previous=active;
     result.animationGroups.forEach(g=>g.stop());
     restPose.forEach(({node,position,rotation})=>{node.position.copyFrom(position);if(rotation)node.rotationQuaternion=rotation.clone()});
     active=name;
@@ -56,7 +57,8 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
       }
       return;
     }
-    if(name==='Walk'){elapsed=0;return}
+    // Walking and running share one gait: switching keeps the step phase.
+    if(name==='Walk'||name==='Run'){if(previous!=='Walk'&&previous!=='Run')elapsed=0;return}
     if(name!=='Idle')clips.get(name==='Interact'?'pose_01':'pose_02')?.start(loop);
   };
   play('Idle');

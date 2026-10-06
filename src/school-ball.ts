@@ -53,10 +53,10 @@ export function createSchoolBall(scene:Scene,shadow:ShadowGenerator,onGoal:()=>v
   kick(heading:number){
    velocity.set(Math.sin(heading)*kickSpeed,kickLift,Math.cos(heading)*kickSpeed);scored=false;kicks++;sound.play();
   },
-  update(dt:number,lea:Vector3,moving:boolean){
+  update(dt:number,lea:Vector3,leaSpeed:number){
    // Walking into the ball nudges it ahead: a gentle dribble.
    const dx=mesh.position.x-lea.x,dz=mesh.position.z-lea.z,d=Math.hypot(dx,dz);
-   if(moving&&d<.42&&d>1e-4&&mesh.position.y<.3){const push=Math.max(2.4,Math.hypot(velocity.x,velocity.z));velocity.x=dx/d*push;velocity.z=dz/d*push;scored=false}
+   if(leaSpeed>0&&d<.42&&d>1e-4&&mesh.position.y<.3){const push=Math.max(2.4,leaSpeed*1.3,Math.hypot(velocity.x,velocity.z));velocity.x=dx/d*push;velocity.z=dz/d*push;scored=false}
    const n=Math.max(1,Math.ceil(velocity.length()*dt/.05));for(let i=0;i<n;i++)step(dt/n);
   },
   reset(){mesh.position.copyFrom(start);velocity.setAll(0);scored=false},

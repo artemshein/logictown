@@ -4,11 +4,13 @@ import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorOb
 import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
+import {dogPresent,dogBoardsBus} from './dog-whereabouts';
 import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
 import {createSwingSound} from './swing-sound';
 import {createWindSound} from './wind-sound';
 import {createFallingLeaves} from './falling-leaves';
+import {createRain} from './rain';
 import {createGardenWatering} from './garden-watering';
 import {createDoorKnocks} from './door-knock';
 import {createCatHissSound,catHissDuration} from './cat-hiss-sound';
@@ -37,9 +39,9 @@ const sun=new DirectionalLight('bright afternoon sun',outdoorSunDirection.scale(
 // Direct and fill light share a hue: shadows lower brightness without making grass greener.
 sky.diffuse=sun.diffuse.clone();sky.groundColor=sun.diffuse.scale(.45);
 const shadow=new ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=ShadowGenerator.QUALITY_LOW;shadow.bias=.0005;shadow.normalBias=.02;shadow.darkness=.22;
-createOutdoorSky(scene);
+const dome=createOutdoorSky(scene);
 const lea=new TransformNode('Lea outdoors',scene);lea.position.set(outdoorSpawn.x,.11,outdoorSpawn.z);const controls=createMovementControls(app),quality=createAdaptiveQuality();
-let route:Vector3[]=[],transitioning=false;
+let route:Vector3[]=[],transitioning=false,dogHere=true,boardingDog:{staying:boolean}|undefined;
 function walkTo(p:Vector3){if(transitioning)return;route=outdoorPath(lea.position,p).map(p=>new Vector3(p.x,.11,p.z))}
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null;
 const check=!!checkMode;
@@ -56,7 +58,7 @@ function enterStore(){if(transitioning||!nearInteraction(lea.position,storeAppro
 storeButton.onclick=enterStore;
 const busButton=document.createElement('button');busButton.className='street-swing';busButton.textContent='Поехать в школу';busButton.hidden=true;app.append(busButton);
 const nearBusStop=()=>!transitioning&&(nearInteraction(lea.position,new Vector3(outdoorBusApproach.x,.11,outdoorBusApproach.z),2.4)||Math.abs(lea.position.x-outdoorBusStop.x)<outdoorBusStop.w/2&&Math.abs(lea.position.z-outdoorBusStop.z)<outdoorBusStop.d/2);
-function rideBus(){if(!nearBusStop())return;transitioning=true;route=[];controls.clear();loading.querySelector('strong')!.textContent='Садимся в автобус…';loading.hidden=false;if(persistLocation)savePlayerLocation({version:2,area:'street'});requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(check?'/bus.html?check=ride':'/bus.html?to=school')))}
+function rideBus(){if(!nearBusStop())return;transitioning=true;route=[];controls.clear();loading.querySelector('strong')!.textContent='Садимся в автобус…';loading.hidden=false;if(persistLocation){savePlayerLocation({version:2,area:'street'});dogBoardsBus('town',dogHere?boardingDog:undefined)}requestAnimationFrame(()=>requestAnimationFrame(()=>location.assign(check?'/bus.html?check=ride':'/bus.html?to=school')))}
 busButton.onclick=rideBus;
 const storePin=createInteractionMarker(scene,'Войти в магазин','↪',new Vector3(52,1.5,-24.5),enterStore);
 const townOverview=checkMode==='town';
@@ -90,6 +92,7 @@ async function start(){
  const windSound=createWindSound(checkMode==='wind');scene.onDisposeObservable.add(()=>windSound.dispose());
  if(checkMode==='wind'){const nav=document.createElement('div');nav.className='street-check';nav.style.top='auto';nav.style.bottom='150px';const button=document.createElement('button');button.textContent='Проверить ветер';button.onclick=()=>{void windSound.preview()};const status=document.createElement('output');status.id='wind-status';nav.append(button,status);app.append(nav);scene.onBeforeRenderObservable.add(()=>status.textContent=windSound.status());}
  const leaves=createFallingLeaves(scene,outdoorBlocked,48,checkMode==='leaves');if(checkMode==='leaves')Object.assign(window,{leavesCheck:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)leaves.update(.04,lea.position,lea.rotation.y);return leaves.flying}});scene.onDisposeObservable.add(()=>leaves.dispose());
+ const rain=createRain(scene,{sun,sky,dome},raining=>say(raining?'Пошёл дождь':'Дождь закончился'),{force:checkMode==='rain',persist:persistLocation});scene.onDisposeObservable.add(()=>rain.dispose());
  const garden=createGardenWatering(scene,shadow,lea,character,outdoorFlowerBeds,outdoorWateringCan,say);scene.onDisposeObservable.add(()=>garden.dispose());
  if(checkMode==='garden'||checkMode==='watering-can')Object.assign(window,{leaCheck:{character,lea},gardenCheck:garden,gardenStep:(seconds:number)=>{for(let t=0;t<seconds;t+=.04)garden.update(.04,true);return garden.wateringTime}});
  const paint=createPaintPuddle(scene,outdoorPaintPuddle);scene.onDisposeObservable.add(()=>paint.dispose());
@@ -105,6 +108,9 @@ async function start(){
  window.addEventListener('keydown',cancelRide);
  scene.onDisposeObservable.add(()=>{swingControls.dispose();window.removeEventListener('keydown',cancelRide)});
  const dog=await loadDog(scene,lea,shadow,()=>false,{path:outdoorPath,blocked:outdoorBlocked,target:outdoorCompanionTarget});
+ // A puppy left sitting at the school stays there until Lea comes back for it.
+ dogHere=!persistLocation||dogPresent('town');boardingDog=dog;
+ if(!dogHere){dog.root.position.set(999,0,999);dog.root.setEnabled(false)}
  const dogCommands=installDogCommands(app,dog);scene.onDisposeObservable.add(()=>dogCommands.dispose());
  const cat=await loadStreetCat(scene,shadow,{path:outdoorPath,blocked:outdoorBlocked});
  if(checkMode==='cat-model')cat.root.rotation.y=Math.PI;
@@ -131,15 +137,16 @@ async function start(){
  await scene.whenReadyAsync();loading.hidden=true;
  engine.runRenderLoop(()=>{
   const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning&&!ride.active&&!garden.busy);if(garden.busy)route=[];let moving=false;
-  if(!ride.active&&(input.forward||input.turn)){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*3.3,outdoorBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
+  if(!ride.active&&(input.forward||input.turn)){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*(input.run?6.2:3.3),outdoorBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(!ride.active&&route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!outdoorBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
-  if(ride.active){ride.update(dt,swingControls.read());swingControls.update(ride.amplitude,ride.direction,ride.feedback,ride.won)}else character.play(moving?'Walk':'Idle');
+  if(ride.active){ride.update(dt,swingControls.read());swingControls.update(ride.amplitude,ride.direction,ride.feedback,ride.won)}else character.play(moving?(input.run&&(input.forward||input.turn)?'Run':'Walk'):'Idle');
   swingSound.update(ride.active,ride.angle,dt,Vector3.Distance(lea.position,world.swingHinge.getAbsolutePosition()));
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
-  dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
-  dogCommands.update(!transitioning&&!ride.active);
+  if(dogHere)dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
+  dogCommands.update(dogHere&&!transitioning&&!ride.active);
   updateCatScene(dt);
   leaves.update(dt,lea.position,lea.rotation.y);
+  rain.update(dt,lea.position);
   paint.update(dt,lea.position,lea.rotation.y,moving);
   garden.update(dt,!transitioning&&!ride.active);knocks.update(!transitioning&&!ride.active&&!garden.busy);
   const nearStore=nearInteraction(lea.position,storeApproach,2.8)&&!transitioning;storeButton.hidden=!nearStore;busButton.hidden=ride.active||garden.busy||!nearBusStop();storePin.mesh.setEnabled(nearStore);
