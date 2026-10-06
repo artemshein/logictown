@@ -6,5 +6,5 @@
   "license": "CC-BY-4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
   "file": "cat-girl.glb",
-  "changes": "Original GLB unchanged. At runtime the T-pose arms are lowered and the right arm waves by blending sleeve vertices around shoulder and elbow pivots; scaled to 1.6 metres tall."
+  "changes": "Original GLB unchanged. At runtime the T-pose arms are lowered and the right arm waves by blending sleeve vertices around shoulder and elbow pivots; scaled to 1.75 metres tall."
 }

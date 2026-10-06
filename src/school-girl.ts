@@ -1,7 +1,7 @@
 import {ImportMeshAsync,Mesh,TransformNode,Vector3,VertexBuffer,VertexData,type Scene,type ShadowGenerator} from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 // Ears included; a little taller than Lea (about 1.5 m with her hat).
-const height=1.6;
+const height=1.75;
 // Measured on the source T-pose (metres, before scaling): shoulder and elbow pivots.
 const shoulder={x:.2,y:1.21},elbow={x:.42},sourceHeight=1.7115;
 const smooth=(a:number,b:number,x:number)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)};
