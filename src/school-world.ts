@@ -7,7 +7,8 @@ import {buildSchoolSports} from './school-sports';
 import {buildSchoolFence} from './school-fence';
 import {schoolBuilding,schoolBusStop,schoolFence,schoolSteps,schoolTrees} from './school-layout';
 export async function buildSchoolWorld(scene:Scene,shadow:ShadowGenerator){
- const {ground,floors,paving}=createOutdoorGround(scene);
+ // Keep the ground solid across the whole fenced grounds; the default fades out ~60 m from the village centre.
+ const {ground,floors,paving}=createOutdoorGround(scene,{x:0,z:-72,near:100,far:165});
  // Walk from the pavement through the gate to the steps, a forecourt and paths round to the field.
  const stepsFront=schoolSteps.z+schoolSteps.d/2,forecourt={z:stepsFront+1.75,d:3.5,w:59.4},back=schoolBuilding.z-schoolBuilding.d/2-2.6;
  ground('school entrance walk',schoolFence.gate.x,(-23.8+forecourt.z)/2,4.4,-23.8-forecourt.z,.04,paving);
