@@ -1,0 +1,10 @@
+{
+  "title": "Cat Girl",
+  "author": "firoh",
+  "authorUrl": "https://sketchfab.com/firoh",
+  "source": "https://sketchfab.com/3d-models/cat-girl-85751b390d1b458ba405320415b33d36",
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "file": "cat-girl.glb",
+  "changes": "Original GLB unchanged. At runtime the T-pose arms are lowered and the right arm waves by blending sleeve vertices around shoulder and elbow pivots; scaled to 1.25 metres tall."
+}

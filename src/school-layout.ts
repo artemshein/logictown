@@ -16,6 +16,8 @@ export const schoolPitch={x:0,z:schoolTrack.z,w:60,d:28};
 export const schoolGoals=[-1,1].map(side=>({x:schoolPitch.x+side*schoolPitch.w/2,z:schoolPitch.z,side,w:6,h:2.2,depth:1.6}));
 // Floodlights at the corners between the track and the fence.
 export const schoolLightPoles=[-1,1].flatMap(sx=>[-1,1].map(sz=>({x:sx*44,z:schoolTrack.z+sz*24.5})));
+// A girl in a cat hoodie waits beside the east end of the bleachers.
+export const schoolGirl={x:15.2,z:schoolTrack.z-schoolTrackOuter-2.2,angle:0};
 export const schoolStand={x:0,z:schoolTrack.z-schoolTrackOuter-4,w:26,d:4.4,rows:5};
 // Tall metal fence around the whole grounds; the gate opens onto the pavement.
 export const schoolFence={minX:-58,maxX:58,front:-29,back:-116,height:2.4,gate:{x:0,w:5}};
@@ -48,6 +50,7 @@ export const schoolObstacles:OutdoorObstacle[]=[
  ...schoolGoals.flatMap(g=>[-1,1].map(s=>({x:g.x+g.side*g.depth/2,z:g.z+s*g.w/2,w:g.depth,d:.15,kind:'goal'}))),
  ...schoolGoals.map(g=>({x:g.x+g.side*g.depth,z:g.z,w:.15,d:g.w,kind:'goal'})),
  {x:schoolStand.x,z:schoolStand.z,w:schoolStand.w,d:schoolStand.d,kind:'stand'},
+ {x:schoolGirl.x,z:schoolGirl.z,w:.5,d:.5,kind:'girl'},
  ...schoolTrees.map(t=>({...t,w:t.small?.8:1.8,d:t.small?.8:1.8,kind:'tree'})),
  ...busStopObstacles(schoolBusStop),
 ];

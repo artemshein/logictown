@@ -1,11 +1,12 @@
 import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildSchoolWorld} from './school-world';
-import {schoolBlocked,schoolPath,schoolCompanionTarget,schoolSpawn,schoolBusStop,schoolBusApproach,schoolBuilding,schoolBay,schoolFront,schoolStand,schoolFence,schoolTrack} from './school-layout';
+import {schoolBlocked,schoolPath,schoolCompanionTarget,schoolGirl,schoolSpawn,schoolBusStop,schoolBusApproach,schoolBuilding,schoolBay,schoolFront,schoolStand,schoolFence,schoolTrack} from './school-layout';
 import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
 import {dogPresent,dogBoardsBus} from './dog-whereabouts';
 import {createSchoolBall} from './school-ball';
+import {loadCatGirl} from './school-girl';
 import {createWindSound} from './wind-sound';
 import {createFallingLeaves} from './falling-leaves';
 import {createRain} from './rain';
@@ -33,7 +34,7 @@ const shadow=new ShadowGenerator(2048,sun);shadow.usePercentageCloserFiltering=t
 const dome=createOutdoorSky(scene);
 const lea=new TransformNode('Lea at school',scene);lea.position.set(schoolSpawn.x,.11,schoolSpawn.z);lea.rotation.y=Math.PI;
 const controls=createMovementControls(app),quality=createAdaptiveQuality();
-let route:Vector3[]=[],transitioning=false,dog:Awaited<ReturnType<typeof loadDog>>|undefined;
+let route:Vector3[]=[],transitioning=false,greeting=0,dog:Awaited<ReturnType<typeof loadDog>>|undefined;
 function walkTo(p:Vector3){if(transitioning)return;route=schoolPath(lea.position,p).map(p=>new Vector3(p.x,.11,p.z))}
 const checkMode=import.meta.env.DEV?new URLSearchParams(location.search).get('check'):null,check=!!checkMode;
 const persistLocation=!check;
@@ -47,6 +48,7 @@ if(checkMode==='gate')lea.position.set(places.gate.x,.11,places.gate.z);
 if(checkMode==='steps')lea.position.set(places.steps.x,.11,places.steps.z);
 if(checkMode==='field')lea.position.set(places.field.x,.11,places.field.z);
 if(checkMode==='track')lea.position.set(places.track.x,.11,places.track.z);
+if(checkMode==='girl'||checkMode==='girl-view'){lea.position.set(schoolGirl.x-.4,.11,schoolGirl.z+1.6);lea.rotation.y=Math.PI}
 if(checkMode==='ball'){lea.position.set(schoolTrack.x+.9,.11,schoolTrack.z+.5);lea.rotation.y=-Math.PI/2}
 // Camera blockers: the building and its entrance bay, plus the bleachers. The palisade is see-through.
 const walls=[
@@ -55,7 +57,7 @@ const walls=[
  {min:new Vector3(schoolStand.x-schoolStand.w/2,0,schoolStand.z-schoolStand.d/2),max:new Vector3(schoolStand.x+schoolStand.w/2,2.6,schoolStand.z+schoolStand.d/2)},
 ];
 async function start(){
- const [world,character]=await Promise.all([buildSchoolWorld(scene,shadow),loadLea(scene,lea,shadow)]);
+ const [world,character,girl]=await Promise.all([buildSchoolWorld(scene,shadow),loadLea(scene,lea,shadow),loadCatGirl(scene,shadow,schoolGirl)]);
  const locationAutosave=installLocationAutosave(()=>({version:2,area:'school'}),()=>persistLocation&&!transitioning);
  locationAutosave.flush();scene.onDisposeObservable.add(()=>locationAutosave.dispose());
  const windSound=createWindSound();scene.onDisposeObservable.add(()=>windSound.dispose());
@@ -64,6 +66,20 @@ async function start(){
  const rain=createRain(scene,{sun,sky,dome},raining=>say(raining?'Пошёл дождь':'Дождь закончился'),{force:checkMode==='rain',persist:persistLocation});scene.onDisposeObservable.add(()=>rain.dispose());
  // The puppy rides along unless it was told to sit back in town.
  const dogCommands=(!persistLocation||dogPresent('school'))?await loadDog(scene,lea,shadow,()=>false,{path:schoolPath,blocked:schoolBlocked,target:schoolCompanionTarget}).then(asset=>{dog=asset;const commands=installDogCommands(app,asset);scene.onDisposeObservable.add(()=>commands.dispose());return commands}):undefined;
+ // Greeting: Lea waves first, the girl waves back a moment later.
+ const greetButton=document.createElement('button');greetButton.className='street-swing';greetButton.textContent='Поприветствовать';greetButton.hidden=true;app.append(greetButton);
+ const nearGirl=()=>!transitioning&&!greeting&&Math.hypot(lea.position.x-schoolGirl.x,lea.position.z-schoolGirl.z)<2.4;
+ let girlAnswered=false;
+ greetButton.onclick=()=>{if(!nearGirl())return;route=[];controls.clear();greeting=2.6;girlAnswered=false;lea.rotation.y=Math.atan2(schoolGirl.x-lea.position.x,schoolGirl.z-lea.position.z);character.play('Idle')};
+ function updateGreeting(dt:number){
+  if(!greeting)return;greeting=Math.max(0,greeting-dt);const t=2.6-greeting;
+  if(!girlAnswered&&t>.55){girlAnswered=true;girl.wave();say('«Привет!» — машет в ответ девочка')}
+  if(greeting>0){character.pivot.computeWorldMatrix(true);const right=Vector3.TransformNormal(Vector3.Right(),lea.getWorldMatrix()).normalize(),up=Vector3.Up(),forward=Vector3.TransformNormal(Vector3.Forward(),lea.getWorldMatrix()).normalize();
+   const lift=Math.min(1,t*4,greeting*4),sway=Math.sin(t*11)*.1;
+   const target=lea.position.add(up.scale(.95+.45*lift)).addInPlace(right.scale(.28+sway*lift)).addInPlace(forward.scale(.12));character.reach('Right',target)}
+  else character.relax();
+ }
+ if(checkMode?.startsWith('girl'))Object.assign(window,{girlCheck:{girl,greet:()=>greetButton.click(),get greeting(){return greeting}}});
  const ball=createSchoolBall(scene,shadow,()=>say('Гол!'));scene.onDisposeObservable.add(()=>ball.dispose());
  const kickButton=document.createElement('button');kickButton.className='street-swing';kickButton.textContent='Пнуть';kickButton.hidden=true;app.append(kickButton);
  kickButton.onclick=()=>{if(transitioning||!ball.near(lea.position))return;route=[];controls.clear();ball.kick(lea.rotation.y)};
@@ -76,17 +92,19 @@ if(check){const nav=document.createElement('nav');nav.className='street-check';f
  await scene.whenReadyAsync();loading.hidden=true;
  if(!check)say('Школа № 1. Автобус обратно в город ждёт на остановке.',4200);
  engine.runRenderLoop(()=>{
-  const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning);let moving=false;
+  const q=quality.sample(engine.getDeltaTime());if(q!==undefined)viewport.setQuality(q);viewport.update();const dt=Math.min(.04,engine.getDeltaTime()/1000),input=controls.read(!transitioning&&!greeting);let moving=false;
   if(input.forward||input.turn){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*(input.run?6.2:3.3),schoolBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!schoolBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
-  character.play(moving?(input.run&&(input.forward||input.turn)?'Run':'Walk'):'Idle');
+  if(!greeting)character.play(moving?(input.run&&(input.forward||input.turn)?'Run':'Walk'):'Idle');
   dog?.update(dt,moving,[],false);dogCommands?.update(!transitioning);
   ball.update(dt,lea.position,moving?(input.run&&input.forward?6.2:3.3):0);
   leaves.update(dt,lea.position,lea.rotation.y);
   rain.update(dt,lea.position);
+  girl.update(dt,lea.position);updateGreeting(dt);greetButton.hidden=!nearGirl();
   busButton.hidden=!nearBusStop();kickButton.hidden=transitioning||!ball.near(lea.position);
-  camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
+  camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y+(greeting?-.8:0),camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
+  if(checkMode==='girl-view'){camera.target.set(schoolGirl.x-.2,.8,schoolGirl.z+.6);camera.alpha=Math.PI/2+.75;camera.beta=1.4;camera.radius=3.4}
   if(checkMode==='overview'){camera.target.set(0,4,-46);camera.alpha=Math.PI/2-.35;camera.beta=1.2;camera.radius=62}
   if(checkMode==='facade'){camera.target.set(0,5.2,-40);camera.alpha=Math.PI/2;camera.beta=1.5;camera.radius=34}
   if(checkMode==='stadium'){camera.target.set(0,0,schoolTrack.z);camera.alpha=Math.PI/2+.2;camera.beta=.95;camera.radius=78}
