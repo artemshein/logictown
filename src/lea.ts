@@ -1,6 +1,7 @@
-import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Quaternion, Scene, ShadowGenerator, TransformNode, Vector3, Space, Matrix } from '@babylonjs/core';
+import { AnimationGroup, HDRCubeTexture, ImportMeshAsync, Mesh, Quaternion, Scene, ShadowGenerator, TransformNode, Vector3, Space, Matrix } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import {placePalm,reachArm} from './arm-grip';
+import {createLeaHat} from './lea-hat';
 
 export type LeaClip = 'Idle' | 'Walk' | 'Run' | 'Interact' | 'Celebrate' | 'Sit';
 export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGenerator){
@@ -82,5 +83,9 @@ export async function loadLea(scene:Scene,parent:TransformNode,shadow?:ShadowGen
   const palm=(side:'Left'|'Right')=>{const p=gripArms[side==='Left'?0:1].palm;p.computeWorldMatrix(true);return p.getAbsolutePosition().clone()};
   // Return to the base pose of the current clip after scripted reaching.
   const relax=()=>{const clip=active;active=undefined;if(clip)play(clip)};
-  return {get gripError(){return Math.max(...gripErrors)},gripSwing,reach,palm,relax,armPoints,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
+  const body=result.meshes.find(m=>m.getTotalVertices()>0) as Mesh;
+  const hat=await createLeaHat(scene,body,result.transformNodes.find(n=>n.name.includes(':Head_')&&!n.name.includes('Head_end')),shadow);
+  // Tapping Lea opens her own actions; she stays unpickable until a page asks for that.
+  const setInteraction=(handler:()=>void)=>[...result.meshes,...hat.hair].forEach(m=>{m.isPickable=m.getTotalVertices()>0;m.metadata={...m.metadata,interaction:handler}});
+  return {hat,setInteraction,get gripError(){return Math.max(...gripErrors)},gripSwing,reach,palm,relax,armPoints,hipOffset,pivot,meshes:result.meshes,clips,play,stop:()=>{scene.onBeforeRenderObservable.remove(observer);result.animationGroups.forEach(g=>g.stop());active=undefined}};
 }

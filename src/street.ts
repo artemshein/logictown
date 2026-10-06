@@ -4,6 +4,7 @@ import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorOb
 import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
+import {installLeaCommands} from './lea-commands';
 import {dogPresent,dogBoardsBus} from './dog-whereabouts';
 import {loadStreetCat} from './cat';
 import {createSwingRide} from './swing-ride';
@@ -112,6 +113,7 @@ async function start(){
  dogHere=!persistLocation||dogPresent('town');boardingDog=dog;
  if(!dogHere){dog.root.position.set(999,0,999);dog.root.setEnabled(false)}
  const dogCommands=installDogCommands(app,dog);scene.onDisposeObservable.add(()=>dogCommands.dispose());
+ const leaCommands=installLeaCommands(app,character);scene.onDisposeObservable.add(()=>leaCommands.dispose());
  const cat=await loadStreetCat(scene,shadow,{path:outdoorPath,blocked:outdoorBlocked});
  if(checkMode==='cat-model')cat.root.rotation.y=Math.PI;
  // With the can and no dog around, the cat can be watered: it hisses, then runs away from Lea.
@@ -143,7 +145,7 @@ async function start(){
   swingSound.update(ride.active,ride.angle,dt,Vector3.Distance(lea.position,world.swingHinge.getAbsolutePosition()));
   swingButton.hidden=!ride.active&&!nearSwing();swingButton.textContent=ride.active?'Закончить качание':'Покачаться';
   if(dogHere)dog.update(dt,moving,[],false);if(checkMode!=='cat-model'&&catCheckStarted)cat.update(dt,dog.root.position);
-  dogCommands.update(dogHere&&!transitioning&&!ride.active);
+  dogCommands.update(dogHere&&!transitioning&&!ride.active);leaCommands.update(!transitioning&&!ride.active);
   updateCatScene(dt);
   leaves.update(dt,lea.position,lea.rotation.y);
   rain.update(dt,lea.position);

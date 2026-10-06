@@ -17,6 +17,7 @@ import {layout,houseBlocked,roomAt,navigation} from './layout';
 import {buildHouseRoom,type HouseRoom} from './house';
 import {roomInfo,roomNames,isBlocked,type RoomId} from './house-data';
 import { loadLea } from './lea';
+import {installLeaCommands} from './lea-commands';
 import { roundedBox, upgradeArt } from './art';
 import './style.css';
 import { Engine, Scene, Color3, Color4, Vector3, MeshBuilder, StandardMaterial, HemisphericLight, DirectionalLight, ShadowGenerator, ArcRotateCamera, TransformNode, Mesh, PointerEventTypes, Ray, DynamicTexture } from '@babylonjs/core';
@@ -172,7 +173,8 @@ const floors=new Set(Array.from(houseRooms.values()).map(r=>r.floor));
 let leaAsset:Awaited<ReturnType<typeof loadLea>>|undefined;
 let characterActionUntil=0;
 const fallbackMeshes=girl.getChildMeshes();
-void loadLea(scene,girl,shadow).then(asset=>{leaAsset=asset;fallbackMeshes.forEach(m=>m.dispose());limbs.length=0}).catch(e=>{console.error('Lea model could not load',e);toast('Модель Леи пока не загрузилась. Обновите страницу.')});
+let leaCommands:ReturnType<typeof installLeaCommands>|undefined;
+void loadLea(scene,girl,shadow).then(asset=>{leaAsset=asset;leaCommands=installLeaCommands($('#app'),asset);fallbackMeshes.forEach(m=>m.dispose());limbs.length=0}).catch(e=>{console.error('Lea model could not load',e);toast('Модель Леи пока не загрузилась. Обновите страницу.')});
 function characterAction(name:'Interact'|'Celebrate'){characterActionUntil=performance.now()+2000;leaAsset?.play(name,false);}
 
 // Floor destination ring.
@@ -300,7 +302,7 @@ engine.runRenderLoop(()=>{const quality=adaptiveQuality.sample(engine.getDeltaTi
   }
  }
  dog?.update(dt,moving,memory.state.fragments,$('.overlay').hidden);
- dogCommands?.update($('.overlay').hidden&&!leavingHouse);
+ dogCommands?.update($('.overlay').hidden&&!leavingHouse);leaCommands?.update($('.overlay').hidden&&!leavingHouse);
  if(dogCheck&&dog)$('#dog-status').textContent=`Щенок ${dog.sitting?'сидит':'идёт / стоит'} · лай: ${dog.barked.join(',')||'нет'} · всего: ${dog.barkCount} · расстояние: ${Vector3.Distance(girl.position,dog.root.position).toFixed(2)}`;
  scene.render();
  locationAutosave.tick(dt);

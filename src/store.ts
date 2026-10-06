@@ -2,6 +2,7 @@ import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,He
 import {buildStore,storeBlocked,storeExit,storeFixtures,storePath,cashierPosition} from './store-world';
 import {installShopping,shoppingZone} from './store-shopping';
 import {loadLea} from './lea';
+import {installLeaCommands} from './lea-commands';
 import {loadStoreCashier} from './store-cashier';
 import {createMovementControls} from './controls';
 import {createViewportSync} from './viewport';
@@ -40,6 +41,7 @@ const exitMarker=createInteractionMarker(scene,'Выйти на улицу','↪
 const walls=[...storeFixtures.map(o=>({min:new Vector3(o.x-o.w/2,0,o.z-o.d/2),max:new Vector3(o.x+o.w/2,o.h,o.z+o.d/2)})),{min:new Vector3(-6.1,0,-5.1),max:new Vector3(-5.9,3.8,5.1)},{min:new Vector3(5.9,0,-5.1),max:new Vector3(6.1,3.8,5.1)},{min:new Vector3(-6.1,0,4.9),max:new Vector3(6.1,3.8,5.1)},{min:new Vector3(-6.1,0,-5.1),max:new Vector3(6.1,3.8,-4.9)}];
 async function start(){
  const [world,character,cashier]=await Promise.all([buildStore(scene,shadow),loadLea(scene,lea,shadow),loadStoreCashier(scene,shadow)]);scene.environmentIntensity=.4;
+ const leaCommands=installLeaCommands(app,character);scene.onDisposeObservable.add(()=>leaCommands.dispose());
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning||shopping.isOpen)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m===world.floor||!!m.metadata?.interaction);if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint)route=storePath(lea.position,hit.pickedPoint).map(p=>new Vector3(p.x,.08,p.z))});
  await scene.whenReadyAsync();loading.hidden=true;locationSaver.flush();
  engine.runRenderLoop(()=>{
@@ -55,7 +57,7 @@ async function start(){
   if(checkMode==='cashier'){camera.target.set(-2.85,1.35,-1.05);camera.alpha=-Math.PI/2;camera.beta=1.4;camera.radius=2.5}
   if(checkMode==='cashier-side'){camera.target.set(-2.85,1.05,-1.05);camera.alpha=-.7;camera.beta=1.3;camera.radius=2.8}
   if(checkMode==='cashier-back'){camera.target.set(-2.85,1.05,-1.05);camera.alpha=Math.PI/2;camera.beta=1.3;camera.radius=2.4}
-  shopping.update(shoppingZone(lea.position,storeFixtures,cashierPosition));const nearExit=!transitioning&&!shopping.isOpen&&nearInteraction(lea.position,storeExit,1.8);exitButton.hidden=!nearExit;exitMarker.mesh.setEnabled(nearExit);scene.render();locationSaver.tick(dt);
+  shopping.update(shoppingZone(lea.position,storeFixtures,cashierPosition));leaCommands.update(!transitioning&&!shopping.isOpen);const nearExit=!transitioning&&!shopping.isOpen&&nearInteraction(lea.position,storeExit,1.8);exitButton.hidden=!nearExit;exitMarker.mesh.setEnabled(nearExit);scene.render();locationSaver.tick(dt);
   if(check){canvas.dataset.cashierFrame=String(cashier.idle?.animatables[0]?.masterFrame??-1);canvas.dataset.cashierHead=cashier.head?.rotationQuaternion?.asArray().join(',')??''}
  });
 }

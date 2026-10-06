@@ -4,6 +4,7 @@ import {schoolBlocked,schoolPath,schoolCompanionTarget,schoolGirl,schoolSpawn,sc
 import {loadLea} from './lea';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
+import {installLeaCommands} from './lea-commands';
 import {dogPresent,dogBoardsBus} from './dog-whereabouts';
 import {createSchoolBall} from './school-ball';
 import {loadCatGirl} from './school-girl';
@@ -85,7 +86,8 @@ async function start(){
  kickButton.onclick=()=>{if(transitioning||!ball.near(lea.position))return;route=[];controls.clear();ball.kick(lea.rotation.y)};
  if(checkMode==='ball')Object.assign(window,{ballCheck:{ball,lea,step(seconds:number){for(let t=0;t<seconds;t+=.02)ball.update(.02,lea.position,0);return ball.mesh.position.asArray()}}});
  scene.environmentIntensity=.75;
- scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&world.floors.includes(m as typeof world.floors[number]));if(hit?.pickedPoint)walkTo(hit.pickedPoint)});
+ scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&(m.isPickable&&!!m.metadata?.interaction||world.floors.includes(m as typeof world.floors[number])));if(hit?.pickedMesh?.metadata?.interaction){hit.pickedMesh.metadata.interaction();return}if(hit?.pickedPoint)walkTo(hit.pickedPoint)});
+ const leaCommands=installLeaCommands(app,character);scene.onDisposeObservable.add(()=>leaCommands.dispose());
 if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,p] of [['К мячу',{x:schoolTrack.x+.9,z:schoolTrack.z}],['К воротам',places.gate],['К крыльцу',places.steps],['На поле',places.field],['На дорожку',places.track],['К остановке',places.stop]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(p.x,.11,p.z));nav.append(b)}const out=document.createElement('output');out.id='school-status';nav.append(out);app.append(nav)}
  // Start behind Lea instead of swinging round on the first frames.
  camera.alpha=-Math.PI/2-lea.rotation.y;
@@ -96,7 +98,7 @@ if(check){const nav=document.createElement('nav');nav.className='street-check';f
   if(input.forward||input.turn){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*(input.run?6.2:3.3),schoolBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!schoolBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
   if(!greeting)character.play(moving?(input.run&&(input.forward||input.turn)?'Run':'Walk'):'Idle');
-  dog?.update(dt,moving,[],false);dogCommands?.update(!transitioning);
+  dog?.update(dt,moving,[],false);dogCommands?.update(!transitioning);leaCommands.update(!transitioning&&!greeting);
   ball.update(dt,lea.position,moving?(input.run&&input.forward?6.2:3.3):0);
   leaves.update(dt,lea.position,lea.rotation.y);
   rain.update(dt,lea.position);
