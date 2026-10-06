@@ -1,4 +1,4 @@
-import {Color3,DynamicTexture,Mesh,MeshBuilder,PBRMaterial,TransformNode,VertexBuffer,VertexData,type BaseTexture,type Scene,type ShadowGenerator} from '@babylonjs/core';
+import {Color3,DynamicTexture,Mesh,MeshBuilder,PBRMaterial,StandardMaterial,TransformNode,VertexBuffer,VertexData,type BaseTexture,type Scene,type ShadowGenerator} from '@babylonjs/core';
 // Lea's beanie is part of her single mesh. Under it the model has only a face mask, so taking
 // the hat off swaps in a modelled auburn hairdo (skull, bangs, side locks) bound to the head.
 const storageKey='logictown-lea-hat';
@@ -17,23 +17,37 @@ function strandTexture(scene:Scene){
  t.update();return t;
 }
 /** Mesh-local frame of Lea's body: x across, y towards the back of the head, z up. */
-function buildHair(scene:Scene,body:Mesh){
+// The model is hollow behind its face mask and its irises have open patches: through them the eyes
+// looked into whatever stood behind the head. A copy of each shell drawn from the inside only, in a
+// dark teal, closes every gap without ever showing on the outside.
+function interiorMaterial(scene:Scene){
+ const mat=new StandardMaterial('Lea interior',scene);mat.disableLighting=true;mat.emissiveColor=Color3.FromHexString('#1d4449');mat.cullBackFaces=false;return mat;
+}
+function addInterior(mesh:Mesh,material:StandardMaterial){const inside=mesh.clone(mesh.name+' interior',mesh.parent,true)!;inside.material=material;inside.isPickable=false;return inside}
+function buildHair(scene:Scene,body:Mesh,interior:StandardMaterial){
  const root=new TransformNode('Lea hair',scene);root.parent=body;
  const mat=new PBRMaterial('Lea copper auburn hair',scene);mat.albedoTexture=strandTexture(scene);mat.albedoColor=new Color3(1,1,1);mat.metallic=0;mat.roughness=.55;
  const meshes:Mesh[]=[];
  const add=(m:Mesh,parent:TransformNode=root)=>{m.parent=parent;m.material=mat;m.receiveShadows=true;meshes.push(m);return m};
- // One rounded volume from the brow line to the nape. Below the brows its front is pressed back
- // behind the face mask so the recessed eyes stay clear; that flattened part is never seen.
- const skull=add(MeshBuilder.CreateSphere('Lea hair',{diameter:2,segments:28,updatable:true},scene));
- const unit=skull.getVerticesData(VertexBuffer.PositionKind)!,shaped=new Float32Array(unit.length);
+ // A bob: rounded crown above, straight sides falling to the jaw line below. Under the brows the
+ // front is pressed back behind the face mask (eyes stay clear) and the sides frame the cheeks.
+ const skull=add(MeshBuilder.CreateSphere('Lea hair',{diameter:2,segments:32,updatable:true},scene));
+ const unit=skull.getVerticesData(VertexBuffer.PositionKind)!,shaped=new Float32Array(unit.length),colors:number[]=[];
+ const smooth=(a:number,b:number,v:number)=>{const t=Math.min(1,Math.max(0,(v-a)/(b-a)));return t*t*(3-2*t)};
  for(let i=0;i<unit.length;i+=3){
-  const x=unit[i]*.148,z=.88+unit[i+1]*.15;let y=.06-unit[i+2]*.17;
-  const limit=z>=.895?-1:-.11+Math.min(1,(.895-z)/.095)*.11,width=1-Math.min(1,Math.max(0,(Math.abs(x)-.13)/.02));
-  if(y<limit)y+=(limit-y)*width;
+  const ux=unit[i],uy=unit[i+1],uz=unit[i+2];let x:number,y:number,z:number;
+  if(uy>=0){x=ux*.148;y=.06-uz*.17;z=.88+uy*.15}
+  else{const r=Math.hypot(ux,uz),g=Math.sqrt(1-uy**8),dx=r>1e-6?ux/r:0,dz=r>1e-6?uz/r:0;x=dx*g*.15;y=.06-dz*g*.17;z=.88+uy*.2}
+  if(z<.895){
+   const face=-.11+Math.min(1,(.895-z)/.095)*.11,limit=face+(-.06-face)*smooth(.115,.14,Math.abs(x));
+   // The pressed-back part faces the eyes from inside the head: tint it like the interior.
+   if(y<limit-.004){y=limit;colors.push(.11,.27,.29,1)}else{if(y<limit)y=limit;colors.push(1,1,1,1)}
+  }else colors.push(1,1,1,1);
   shaped[i]=x;shaped[i+1]=y;shaped[i+2]=z;
  }
  const normals:number[]=[];VertexData.ComputeNormals(shaped,skull.getIndices()!,normals);
- skull.updateVerticesData(VertexBuffer.PositionKind,shaped);skull.updateVerticesData(VertexBuffer.NormalKind,normals);skull.refreshBoundingInfo();
+ skull.updateVerticesData(VertexBuffer.PositionKind,shaped);skull.updateVerticesData(VertexBuffer.NormalKind,normals);skull.setVerticesData(VertexBuffer.ColorKind,colors);skull.refreshBoundingInfo();
+ addInterior(skull,interior);
  // A pointed lock: a flattened cone, wide at the hairline and tapering downwards.
  const lock=(x:number,y:number,top:number,length:number,width:number,lean:number,tilt=0)=>{
   const pivot=new TransformNode('Lea hair lock',scene);pivot.parent=root;pivot.position.set(x,y,top);pivot.rotation.set(tilt,lean,0);
@@ -48,27 +62,13 @@ function buildHair(scene:Scene,body:Mesh){
   lock(x,rootY,rootZ,length,width,lean,Math.asin(dy/length)).scaling.z=.5;
  };
  for(let i=-3;i<=3;i++){const x=i*.032;rooted(x,.95,.855-(i%2?.008:0),-.116+x*x*2.2,.06,-i*.04)}
- // Side locks fall in front of the ears from the temples.
- for(const s of [-1,1])rooted(s*.128,.9,.72,-.04,.048,-s*.03);
  return {root,meshes};
-}
-// The irises have open patches meant to show an eyeball the model lacks, and the head behind the
-// face mask is hollow: hair or scenery showed through the eyes. A dark teal volume fills the head
-// just behind the mask, so from any angle the eyes look into it. Hat on or off.
-function buildEyeBacking(scene:Scene,body:Mesh){
- const mat=new PBRMaterial('Lea iris depth',scene);mat.albedoColor=Color3.White();mat.metallic=0;mat.roughness=.35;
- const e=MeshBuilder.CreateSphere('Lea eye backing',{diameter:1,segments:20},scene);e.parent=body;e.material=mat;e.isPickable=false;
- e.position.set(0,.02,.81);e.rotation.x=Math.PI/2;e.scaling.set(.26,.17,.16);
- // Teal straight behind the eyes, skin tone towards the temples where it can peek out under the hair.
- const iris=Color3.FromHexString('#1f5a60'),skin=Color3.FromHexString('#f2cdb8'),normals=e.getVerticesData(VertexBuffer.NormalKind)!,colors:number[]=[];
- for(let i=0;i<normals.length;i+=3){const t=Math.min(1,Math.max(0,(normals[i+2]-.35)/.35)),c=Color3.Lerp(skin,iris,t*t*(3-2*t));colors.push(c.r,c.g,c.b,1)}
- e.setVerticesData(VertexBuffer.ColorKind,colors);
- return e;
 }
 export async function createLeaHat(scene:Scene,body:Mesh,head:TransformNode|undefined,shadow?:ShadowGenerator){
  const full=Array.from(body.getIndices()??[]);let bare:number[]|undefined;
- const hair=buildHair(scene,body),eyes=buildEyeBacking(scene,body);hair.meshes.forEach(m=>shadow?.addShadowCaster(m));
- body.computeWorldMatrix(true);head?.computeWorldMatrix(true);if(head){hair.root.setParent(head);eyes.setParent(head)}
+ const interior=interiorMaterial(scene);addInterior(body,interior);
+ const hair=buildHair(scene,body,interior);hair.meshes.forEach(m=>shadow?.addShadowCaster(m));
+ body.computeWorldMatrix(true);head?.computeWorldMatrix(true);if(head)hair.root.setParent(head);
  let on=true;
  const apply=()=>{hair.root.setEnabled(!on&&!!bare);body.setIndices(on||!bare?full:bare)};
  apply();
