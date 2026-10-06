@@ -2,6 +2,7 @@ import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,He
 import {buildSchoolWorld} from './school-world';
 import {schoolBlocked,schoolPath,schoolSpawn,schoolBusStop,schoolBusApproach,schoolBuilding,schoolBay,schoolFront,schoolStand,schoolFence,schoolTrack} from './school-layout';
 import {loadLea} from './lea';
+import {createSchoolBall} from './school-ball';
 import {createWindSound} from './wind-sound';
 import {savePlayerLocation,installLocationAutosave} from './player-location';
 import {createMovementControls} from './controls';
@@ -41,6 +42,7 @@ if(checkMode==='gate')lea.position.set(places.gate.x,.11,places.gate.z);
 if(checkMode==='steps')lea.position.set(places.steps.x,.11,places.steps.z);
 if(checkMode==='field')lea.position.set(places.field.x,.11,places.field.z);
 if(checkMode==='track')lea.position.set(places.track.x,.11,places.track.z);
+if(checkMode==='ball'){lea.position.set(schoolTrack.x+.9,.11,schoolTrack.z+.5);lea.rotation.y=-Math.PI/2}
 // Camera blockers: the building and its entrance bay, plus the bleachers. The palisade is see-through.
 const walls=[
  {min:new Vector3(schoolBuilding.x-schoolBuilding.w/2,0,schoolBuilding.z-schoolBuilding.d/2),max:new Vector3(schoolBuilding.x+schoolBuilding.w/2,schoolBuilding.h,schoolBuilding.z+schoolBuilding.d/2)},
@@ -52,9 +54,13 @@ async function start(){
  const locationAutosave=installLocationAutosave(()=>({version:2,area:'school'}),()=>persistLocation&&!transitioning);
  locationAutosave.flush();scene.onDisposeObservable.add(()=>locationAutosave.dispose());
  const windSound=createWindSound();scene.onDisposeObservable.add(()=>windSound.dispose());
+ const ball=createSchoolBall(scene,shadow,()=>say('Гол!'));scene.onDisposeObservable.add(()=>ball.dispose());
+ const kickButton=document.createElement('button');kickButton.className='street-swing';kickButton.textContent='Пнуть';kickButton.hidden=true;app.append(kickButton);
+ kickButton.onclick=()=>{if(transitioning||!ball.near(lea.position))return;route=[];controls.clear();ball.kick(lea.rotation.y)};
+ if(checkMode==='ball')Object.assign(window,{ballCheck:{ball,lea,step(seconds:number){for(let t=0;t<seconds;t+=.02)ball.update(.02,lea.position,false);return ball.mesh.position.asArray()}}});
  scene.environmentIntensity=.75;
  scene.onPointerObservable.add(info=>{if(info.type!==PointerEventTypes.POINTERTAP||transitioning)return;const hit=scene.pick(scene.pointerX,scene.pointerY,m=>m.isEnabled()&&m.isVisible&&world.floors.includes(m as typeof world.floors[number]));if(hit?.pickedPoint)walkTo(hit.pickedPoint)});
- if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,p] of [['К воротам',places.gate],['К крыльцу',places.steps],['На поле',places.field],['На дорожку',places.track],['К остановке',places.stop]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(p.x,.11,p.z));nav.append(b)}const out=document.createElement('output');out.id='school-status';nav.append(out);app.append(nav)}
+if(check){const nav=document.createElement('nav');nav.className='street-check';for(const [label,p] of [['К мячу',{x:schoolTrack.x+.9,z:schoolTrack.z}],['К воротам',places.gate],['К крыльцу',places.steps],['На поле',places.field],['На дорожку',places.track],['К остановке',places.stop]] as const){const b=document.createElement('button');b.textContent=label;b.onclick=()=>walkTo(new Vector3(p.x,.11,p.z));nav.append(b)}const out=document.createElement('output');out.id='school-status';nav.append(out);app.append(nav)}
  // Start behind Lea instead of swinging round on the first frames.
  camera.alpha=-Math.PI/2-lea.rotation.y;
  await scene.whenReadyAsync();loading.hidden=true;
@@ -64,7 +70,8 @@ async function start(){
   if(input.forward||input.turn){route=[];lea.rotation.y+=input.turn*dt*2.2;const p=moveWithCollisions(lea.position,lea.rotation.y,input.forward*dt*3.3,schoolBlocked);moving=Math.hypot(p.x-lea.position.x,p.z-lea.position.z)>.0001;lea.position.x=p.x;lea.position.z=p.z}
   else if(route.length&&!transitioning){const delta=route[0].subtract(lea.position);delta.y=0;const dist=delta.length(),travel=Math.min(dist,dt*3.3);if(dist<.001)route.shift();else{const p={x:lea.position.x+delta.x*travel/dist,z:lea.position.z+delta.z*travel/dist};if(!schoolBlocked(p.x,p.z)){lea.position.x=p.x;lea.position.z=p.z;moving=true;lea.rotation.y+=Math.atan2(Math.sin(Math.atan2(delta.x,delta.z)-lea.rotation.y),Math.cos(Math.atan2(delta.x,delta.z)-lea.rotation.y))*Math.min(1,dt*13);if(travel===dist)route.shift()}else route=[]}}
   character.play(moving?'Walk':'Idle');
-  busButton.hidden=!nearBusStop();
+  ball.update(dt,lea.position,moving);
+  busButton.hidden=!nearBusStop();kickButton.hidden=transitioning||!ball.near(lea.position);
   camera.beta=1.25;camera.target.set(lea.position.x,1.1,lea.position.z);const alpha=outdoorCameraAngle(camera.target,-Math.PI/2-lea.rotation.y,camera.beta,boom,walls);camera.alpha+=Math.atan2(Math.sin(alpha-camera.alpha),Math.cos(alpha-camera.alpha))*(1-Math.exp(-dt*7));
   const dir=outdoorCameraDirection(camera.alpha,camera.beta);const distance=cameraDistance(camera.target,dir,boom,walls);camera.radius=distance<camera.radius?distance:Math.min(distance,camera.radius+dt*3);
   if(checkMode==='overview'){camera.target.set(0,4,-46);camera.alpha=Math.PI/2-.35;camera.beta=1.2;camera.radius=62}
@@ -73,7 +80,7 @@ async function start(){
   if(checkMode==='fence'){camera.target.set(30,1.2,schoolFence.front);camera.alpha=Math.PI/2-.55;camera.beta=1.42;camera.radius=9}
   if(checkMode==='entrance'){camera.target.set(0,3,-38);camera.alpha=Math.PI/2+.25;camera.beta=1.42;camera.radius=13}
   sun.position.copyFrom(lea.position.add(outdoorSunDirection.scale(80)));
-  if(check)document.querySelector('#school-status')!.textContent=`Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · остановка ${nearBusStop()?'рядом':'далеко'} · FPS ${engine.getFps().toFixed(0)}`;
+  if(check)document.querySelector('#school-status')!.textContent=`Лея ${lea.position.x.toFixed(1)}, ${lea.position.z.toFixed(1)} · остановка ${nearBusStop()?'рядом':'далеко'} · мяч ${ball.mesh.position.x.toFixed(1)}, ${ball.mesh.position.z.toFixed(1)}, ударов ${ball.kicks}, голов ${ball.goals} · FPS ${engine.getFps().toFixed(0)}`;
   scene.render();
   locationAutosave.tick(dt);
  });

@@ -39,7 +39,7 @@ export function buildSchoolSports(scene:Scene,shadow:ShadowGenerator){
  const fieldMaterial=canvasMaterial(scene,'school track and pitch',Math.round(W*pxPerMetre),Math.round(H*pxPerMetre),paintField,true);fieldMaterial.backFaceCulling=true;fieldMaterial.specularColor=Color3.Black();
  const field=MeshBuilder.CreateGround('school track and football pitch',{width:W,height:H},scene);field.position.set(schoolTrack.x,.03,schoolTrack.z);field.material=fieldMaterial;field.receiveShadows=true;
  const mat=(name:string,hex:string,spec=.1)=>{const m=new StandardMaterial('school '+name,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=new Color3(spec,spec,spec);return m};
- const white=mat('goal frame','#f4f4f0',.3),alu=mat('stand aluminium','#c3c8cc',.35),frame=mat('stand frame','#6c7276',.2),pole=mat('floodlight pole','#8b9195',.25);
+ const white=mat('goal frame','#f4f4f0',.3),alu=mat('stand aluminium','#c3c8cc',.35),frame=mat('stand frame','#6c7276',.2),deck=mat('stand deck','#8e959a',.2),pole=mat('floodlight pole','#8b9195',.25);
  const lamp=mat('floodlight lamps','#fffbe8');lamp.emissiveColor=new Color3(.75,.74,.66);
  const net=canvasMaterial(scene,'goal net',256,256,netPaint,true);net.specularColor=Color3.Black();
  const parts=new Map<StandardMaterial,Mesh[]>();const add=(m:Mesh,material:StandardMaterial)=>{m.material=material;const list=parts.get(material)??[];list.push(m);parts.set(material,list);return m};
@@ -47,20 +47,23 @@ export function buildSchoolSports(scene:Scene,shadow:ShadowGenerator){
  const bar=(name:string,length:number,x:number,y:number,z:number,axis:'x'|'y'|'z')=>{const b=add(MeshBuilder.CreateCylinder(name,{height:length,diameter:.12,tessellation:10},scene),white);b.position.set(x,y,z);if(axis==='x')b.rotation.z=Math.PI/2;if(axis==='z')b.rotation.x=Math.PI/2;return b};
  for(const g of schoolGoals){
   const back=g.x+g.side*g.depth;
-  for(const t of [-1,1]){bar('goal post',g.h,g.x,g.h/2,g.z+t*g.w/2,'y');bar('goal back post',g.h*.8,back,g.h*.4,g.z+t*g.w/2,'y');bar('goal ground bar',g.depth,g.x+g.side*g.depth/2,.06,g.z+t*g.w/2,'x');
-   const stay=bar('goal net stay',Math.hypot(g.depth,g.h*.2),g.x+g.side*g.depth/2,g.h*.9,g.z+t*g.w/2,'x');stay.rotation.z=Math.PI/2+g.side*Math.atan2(g.h*.2,g.depth)}
-  bar('goal crossbar',g.w+.12,g.x,g.h,g.z,'z');bar('goal back bar',g.w,back,.06,g.z,'z');bar('goal back top bar',g.w,back,g.h*.8,g.z,'z');
-  // Net: back, sides and sloping roof; double-sided alpha-tested planes.
+  for(const t of [-1,1]){bar('goal post',g.h,g.x,g.h/2,g.z+t*g.w/2,'y');bar('goal back post',g.h,back,g.h/2,g.z+t*g.w/2,'y');bar('goal ground bar',g.depth,g.x+g.side*g.depth/2,.06,g.z+t*g.w/2,'x');
+   bar('goal top stay',g.depth,g.x+g.side*g.depth/2,g.h,g.z+t*g.w/2,'x')}
+  bar('goal crossbar',g.w+.12,g.x,g.h,g.z,'z');bar('goal back bar',g.w,back,.06,g.z,'z');bar('goal back top bar',g.w,back,g.h,g.z,'z');
+  // Box-shaped net: back, sides and roof; double-sided alpha-tested planes.
   const plane=(w:number,h:number,x:number,y:number,z:number,ry:number,rx=0)=>{const p=MeshBuilder.CreatePlane('goal net',{width:w,height:h},scene);p.material=net;p.position.set(x,y,z);p.rotation.set(rx,ry,0);p.isPickable=false;meshes.push(p);return p};
-  plane(g.w,g.h*.8,back,g.h*.4,g.z,Math.PI/2);
-  for(const t of [-1,1])plane(g.depth,g.h*.9,g.x+g.side*g.depth/2,g.h*.45,g.z+t*g.w/2,0);
-  plane(Math.hypot(g.depth,g.h*.2),g.w,g.x+g.side*g.depth/2,g.h*.9,g.z,0,Math.PI/2);
+  plane(g.w,g.h,back,g.h/2,g.z,Math.PI/2);
+  for(const t of [-1,1])plane(g.depth,g.h,g.x+g.side*g.depth/2,g.h/2,g.z+t*g.w/2,0);
+  plane(g.depth,g.w,g.x+g.side*g.depth/2,g.h,g.z,0,Math.PI/2);
  }
  // Aluminium bleachers on the far straight, rising away from the pitch.
  const s=schoolStand,rowDepth=s.d/s.rows,frontEdge=s.z+s.d/2;
  for(let i=0;i<s.rows;i++){
   const z=frontEdge-rowDepth*(i+.5),y=.45+i*.42;
   box('stand seat',s.w,.06,.34,s.x,y,z-.08,alu);box('stand footboard',s.w,.04,.5,s.x,y-.4,z+.16,alu);
+  // Solid stepped deck under each row, so no grass shows through beneath the seats.
+  const deckTop=y-.42;if(deckTop>.01)box('stand deck',s.w,deckTop,rowDepth,s.x,deckTop/2,z,deck);
+  box('stand riser',s.w,.42,.04,s.x,deckTop+.21,z-rowDepth/2+.02,deck);
  }
  for(let x=-s.w/2+.3;x<=s.w/2;x+=s.w/6-.1){
   const leg=box('stand stringer',.08,.1,s.d*1.08,s.x+x,(.45+(s.rows-1)*.42)/2,s.z,frame);leg.rotation.x=Math.atan2(.42*(s.rows-1),s.d-rowDepth);
