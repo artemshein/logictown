@@ -1,3 +1,4 @@
+import './no-zoom';
 import {loadDog} from './dog';
 import {installDogCommands} from './dog-commands';
 import {dogPresent} from './dog-whereabouts';

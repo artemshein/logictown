@@ -1,3 +1,4 @@
+import './no-zoom';
 import {createViewportSync} from './viewport';
 import {ArcRotateCamera, Color3, Color4, DirectionalLight, Engine, HemisphericLight, MeshBuilder, Scene, ShadowGenerator, StandardMaterial, TransformNode, Vector3} from '@babylonjs/core';
 import {loadLea,LeaClip} from './lea';

@@ -1,3 +1,4 @@
+import './no-zoom';
 import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildSchoolWorld} from './school-world';
 import {schoolBlocked,schoolPath,schoolCompanionTarget,schoolGirl,schoolSpawn,schoolBusStop,schoolBusApproach,schoolBuilding,schoolBay,schoolFront,schoolStand,schoolFence,schoolTrack} from './school-layout';

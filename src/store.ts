@@ -1,3 +1,4 @@
+import './no-zoom';
 import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildStore,storeBlocked,storeExit,storeFixtures,storePath,cashierPosition} from './store-world';
 import {installShopping,shoppingZone} from './store-shopping';

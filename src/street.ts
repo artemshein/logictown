@@ -1,3 +1,4 @@
+import './no-zoom';
 import {ArcRotateCamera,Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointerEventTypes,Scene,ShadowGenerator,TransformNode,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
 import {outdoorBlocked,outdoorPath,outdoorSpawn,outdoorCompanionTarget,outdoorObstacles,outdoorStore,outdoorHomes,outdoorEntrance,outdoorDoor,outdoorFlowerBeds,outdoorWateringCan,outdoorNeighbourDoors,outdoorBusStop,outdoorBusApproach,outdoorPaintPuddle} from './outdoor-layout';

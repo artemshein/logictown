@@ -1,3 +1,4 @@
+import './no-zoom';
 import {freshQuest,restoreQuest,pour,award,unlock,unlockWithCode,CABINET_CODE,medals,type Medal,type QuestState} from './memory-state';
 import './memory.css';
 export const medalNames:Record<Medal,string>={flower:'Цветок',cup:'Чашка',boat:'Кораблик',book:'Книга',moon:'Луна'};

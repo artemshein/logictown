@@ -1,0 +1,3 @@
+/* iOS Safari zooms the page on a double tap and the zoom can't be undone inside a full-screen game. */
+:where(html,body,body *){touch-action:manipulation}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}

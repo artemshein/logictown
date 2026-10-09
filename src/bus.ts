@@ -1,3 +1,4 @@
+import './no-zoom';
 import {Color3,Color4,DirectionalLight,Engine,FxaaPostProcess,HemisphericLight,PointLight,Scene,ShadowGenerator,UniversalCamera,Vector3} from '@babylonjs/core';
 import {buildOutdoorWorld} from './outdoor-world';
 import {buildSchoolWorld} from './school-world';
